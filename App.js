@@ -1,20 +1,50 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { onAuthStateChanged } from 'firebase/auth';
+import { firebaseAuth } from './firebase';
+
+import Splash from './screens/Splash';
+import Signin from './screens/Signin';
+import Signup from './screens/Signup';
+import Home from './screens/Home';
+
+const Stack = createStackNavigator();
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+            setUser(user);
+        });
+
+        return unsubscribe;
+    }, []);
+
+    return (
+        <View style={styles.container}>
+            <NavigationContainer>
+                <Stack.Navigator>
+                    {user ? (
+                        <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
+                    ) : (
+                        <>
+                            <Stack.Screen name="Signin" component={Signin} options={{ headerShown: false }} />
+                            <Stack.Screen name="Splash" component={Splash} options={{ headerShown: false }} />
+                            <Stack.Screen name="Signup" component={Signup} options={{ headerShown: false }} />
+                        </>
+                    )}
+                </Stack.Navigator>
+            </NavigationContainer>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+    },
 });
