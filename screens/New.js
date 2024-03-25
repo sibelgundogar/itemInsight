@@ -1,9 +1,75 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Text, TextInput, TouchableOpacity } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Text, TextInput, TouchableOpacity, Modal, Image, FlatList } from 'react-native';
 import { SelectList } from 'react-native-dropdown-select-list';
+import { Camera } from 'expo-camera';
+import { Permissions } from 'expo-permissions';
+import SelectedPhoto from '../components/SelectedPhoto';
+import SelectPhotoButton from '../components/SelectPhotoButton';
+import SelectionDrawer from '../components/SelectionDrawer';
+import * as ImagePicker from 'react-native-image-picker';
 
 export default function New() {
   const [selected, setSelected] = React.useState('');
+  const [permission, requestPermission] = Camera.useCameraPermissions();
+  const [hasPermission, setHasPermission] = useState(false);
+  const [cameraWorking, setCameraWorking] = useState(false);
+  const [selectedPhotos, setSelectedPhotos] = useState(['addButton']);
+  const [lastTakenPhoto, setLastTakenPhoto] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+
+  let camera = useRef(null);
+
+  const addPicture = () => {
+    setModalVisible(true);
+  }
+
+  const takePicture = async () => {
+    try {
+      ImagePicker.launchCamera({
+        mediaType: 'photo',
+        includeBase64: false,
+        maxHeight: 200,
+        maxWidth: 200,
+      }, console.log).catch(console.log);
+    } catch (e) {
+      console.log(e);
+    }
+
+
+    // if (!hasPermission) {
+    //   const { status } = await Camera.requestCameraPermissionsAsync();
+    //   let _hasPermission = status === 'granted';
+    //   setHasPermission(_hasPermission);
+
+    //   if (!_hasPermission) return;
+    // }
+    // if (!cameraWorking) {
+    //   setCameraWorking(true)
+    // }
+
+    // if (cameraWorking && camera) {
+    //   let picture = await camera.takePictureAsync();
+    //   let newPhotos = [...selectedPhotos];
+    //   newPhotos.splice(1, 0, picture.uri);
+    //   setSelectedPhotos(newPhotos);
+    // }
+  };
+
+  const selectFromGallery = () => {
+    ImagePicker.launchImageLibrary();
+  }
+
+  const removePicture = (index) => {
+    let newPhotos = [...selectedPhotos];
+    newPhotos.splice(index, 1);
+    setSelectedPhotos(newPhotos);
+  }
+
+
+
+
+
+
 
   // Select listlerin içini doldurmak için örnek şehir ve ilçe bilgileri
   const city = [
@@ -23,15 +89,30 @@ export default function New() {
     { value: 'Cankaya' },
   ];
 
-
   return (
     <ScrollView style={styles.container}>
+      <SelectionDrawer visible={modalVisible} onClose={() => { setModalVisible(false) }} options={[{ text: 'Camera', action: takePicture }, { text: 'Gallery', action: selectFromGallery }]} />
+
+
+      {cameraWorking ?
+        <View style={{ height: "40%" }}>
+          <Camera
+            style={{ height: '100%', width: "100%" }}
+            ref={(r) => {
+              camera = r;
+            }} />
+        </View>
+
+        : null}
       <View style={styles.photoContainer}>
-        <TouchableOpacity style={styles.photoButton}>
-          <Text style={styles.buttonText}>Fotoğraf Ekle</Text>
-        </TouchableOpacity>
+        <FlatList horizontal data={selectedPhotos} renderItem={({ item, index }) => (
+          (item === 'addButton') ? (selectedPhotos.length === 6) ? null : <SelectPhotoButton onPress={addPicture} /> : <SelectedPhoto onDelete={() => { removePicture(index) }} src={item} />
+        )}
+        />
+
       </View>
 
+      {(lastTakenPhoto !== '') ? <Image src={lastTakenPhoto} width={300} height={100} style={{ width: "100%", height: "30%" }} /> : null}
       <Text style={styles.inputText}>Ürün Başlığı</Text>
       <TextInput style={styles.input} placeholder="Ürün Başlığı" />
 
@@ -69,20 +150,23 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     marginVertical: 20,
     borderRadius: 10,
+    height: 125
   },
   photoButton: {
     alignSelf: 'center',
-    marginTop: 20,
+    marginVertical: 10,
+    marginHorizontal: 4,
     borderWidth: 2,
     borderColor: '#B97AFF',
-    marginBottom: 20,
     backgroundColor: '#DBB9EC',
     padding: 10,
     borderRadius: 5,
-    width: 120,
+    width: 100,
+    height: 100
   },
   buttonText: {
     textAlign: 'center',
+    fontSize: 45,
   },
   inputText: {
     fontSize: 15,
@@ -124,5 +208,3 @@ const styles = StyleSheet.create({
     width: 155,
   }
 });
-
-

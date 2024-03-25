@@ -27,7 +27,10 @@ export default function App() {
         <View style={styles.container}>
             <NavigationContainer>
                 <Stack.Navigator>
-                    {user ? (
+                    {
+                        //buradaki userdaki ünlem kaldır sign in için sormasın diye koydun
+                    }
+                    {!user ? (
                         <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
                     ) : (
                         <>
