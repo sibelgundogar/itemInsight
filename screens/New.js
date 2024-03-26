@@ -1,40 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Text, TextInput, TouchableOpacity, Modal, Image, FlatList } from 'react-native';
 import { SelectList } from 'react-native-dropdown-select-list';
-import { Camera } from 'expo-camera';
-import { Permissions } from 'expo-permissions';
 import SelectedPhoto from '../components/SelectedPhoto';
 import SelectPhotoButton from '../components/SelectPhotoButton';
 import SelectionDrawer from '../components/SelectionDrawer';
-import * as ImagePicker from 'react-native-image-picker';
+import { launchCameraAsync, launchImageLibraryAsync, MediaTypeOptions, CameraType } from 'expo-image-picker';
+import cities from '../data/cities';
+import { Picker } from '@react-native-picker/picker';
 
 export default function New() {
-  const [selected, setSelected] = React.useState('');
-  const [permission, requestPermission] = Camera.useCameraPermissions();
-  const [hasPermission, setHasPermission] = useState(false);
-  const [cameraWorking, setCameraWorking] = useState(false);
+  // const [hasPermission, setHasPermission] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState(['addButton']);
-  const [lastTakenPhoto, setLastTakenPhoto] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
+  const [title, setTitle] = useState('');
+  const [desc, setDesc] = useState('');
+  const [selectedCity, setSelectedCity] = useState(0);
+  const [selectedDistrict, setSelectedDistrict] = useState(cities[0].ilceler[0]);
+  // const [showPicker, setShowPicker] = useState(false);
+  const [showCityPicker, setShowCityPicker] = useState(false);
+  const [showDistrictPicker, setShowDistrictPicker] = useState(false);
 
-  let camera = useRef(null);
+  // let camera = useRef(null);
 
   const addPicture = () => {
     setModalVisible(true);
   }
 
   const takePicture = async () => {
-    try {
-      ImagePicker.launchCamera({
-        mediaType: 'photo',
-        includeBase64: false,
-        maxHeight: 200,
-        maxWidth: 200,
-      }, console.log).catch(console.log);
-    } catch (e) {
-      console.log(e);
-    }
-
 
     // if (!hasPermission) {
     //   const { status } = await Camera.requestCameraPermissionsAsync();
@@ -43,94 +35,148 @@ export default function New() {
 
     //   if (!_hasPermission) return;
     // }
-    // if (!cameraWorking) {
-    //   setCameraWorking(true)
-    // }
+    if (selectedPhotos.length >= 6) return;
+    const result = await launchCameraAsync({
+      aspect: [1, 1],
+      allowsEditing: true,
+      cameraType: CameraType.back,
+      mediaTypes: MediaTypeOptions.Images,
+      quality: 0.5,
+    })
 
-    // if (cameraWorking && camera) {
-    //   let picture = await camera.takePictureAsync();
-    //   let newPhotos = [...selectedPhotos];
-    //   newPhotos.splice(1, 0, picture.uri);
-    //   setSelectedPhotos(newPhotos);
-    // }
+    if (result.canceled) return;
+
+    let newPhotos = [...selectedPhotos];
+    newPhotos.splice(1, 0, result.assets[0].uri);
+    _setSelectedPhotos(newPhotos);
+
   };
 
-  const selectFromGallery = () => {
-    ImagePicker.launchImageLibrary();
+  const selectFromGallery = async () => {
+    if (selectedPhotos.length >= 6) return;
+    const result = await launchImageLibraryAsync({
+      aspect: [1, 1],
+      mediaTypes: MediaTypeOptions.Images,
+      quality: 0.5,
+      allowsMultipleSelection: true,
+      selectionLimit: 6 - selectedPhotos.length
+    })
+
+    if (result.canceled) return;
+
+    let photos = result.assets.map((val) => val.uri)
+
+    let newPhotos = [...selectedPhotos];
+    newPhotos.splice(1, 0, ...photos);
+    _setSelectedPhotos(newPhotos);
+  }
+
+  const _setSelectedPhotos = (photos) => {
+    setSelectedPhotos(photos);
+    if (modalVisible && photos.length >= 6) setModalVisible(false);
   }
 
   const removePicture = (index) => {
     let newPhotos = [...selectedPhotos];
     newPhotos.splice(index, 1);
-    setSelectedPhotos(newPhotos);
+    _setSelectedPhotos(newPhotos);
   }
 
 
+  const toggleCityPicker = () => {
+    setShowCityPicker(!showCityPicker);
+  };
 
+  const handleCityChange = (val, index) => {
+    setSelectedCity(index);
+  };
 
+  const handleCityConfirm = () => {
+    toggleCityPicker(); // Picker'ı kapat
+  };
 
-
-
-  // Select listlerin içini doldurmak için örnek şehir ve ilçe bilgileri
-  const city = [
-    { value: 'Istanbul' },
-    { value: 'Balikesir' },
-    { value: 'Izmir' },
-    { value: 'Bursa' },
-    { value: 'Ankara' },
-  ];
-  const district = [
-    { value: 'Eyup' },
-    { value: 'Esenler' },
-    { value: 'Altieylul' },
-    { value: 'Karesi' },
-    { value: 'Urla' },
-    { value: 'Osmangazi' },
-    { value: 'Cankaya' },
-  ];
+  const toggleDistrictPicker = () => {
+    setShowDistrictPicker(!showDistrictPicker);
+  };
+  const handleDistrictChange = (val, index) =>{
+    setSelectedDistrict(selectedCity.ilceler(index))
+  }
+  const handleDistrictConfirm = () => {
+    toggleDistrictPicker(); // Picker'ı kapat
+  };
 
   return (
     <ScrollView style={styles.container}>
       <SelectionDrawer visible={modalVisible} onClose={() => { setModalVisible(false) }} options={[{ text: 'Camera', action: takePicture }, { text: 'Gallery', action: selectFromGallery }]} />
 
-
-      {cameraWorking ?
-        <View style={{ height: "40%" }}>
-          <Camera
-            style={{ height: '100%', width: "100%" }}
-            ref={(r) => {
-              camera = r;
-            }} />
-        </View>
-
-        : null}
       <View style={styles.photoContainer}>
         <FlatList horizontal data={selectedPhotos} renderItem={({ item, index }) => (
-          (item === 'addButton') ? (selectedPhotos.length === 6) ? null : <SelectPhotoButton onPress={addPicture} /> : <SelectedPhoto onDelete={() => { removePicture(index) }} src={item} />
+          (item === 'addButton') ? (selectedPhotos.length >= 6) ? null : <SelectPhotoButton onPress={addPicture} /> : <SelectedPhoto onDelete={() => { removePicture(index) }} src={item} />
         )}
         />
 
       </View>
 
-      {(lastTakenPhoto !== '') ? <Image src={lastTakenPhoto} width={300} height={100} style={{ width: "100%", height: "30%" }} /> : null}
       <Text style={styles.inputText}>Ürün Başlığı</Text>
-      <TextInput style={styles.input} placeholder="Ürün Başlığı" />
+      <TextInput style={styles.input} placeholder="Ürün Başlığı" value={title} onChangeText={(text) => setTitle(text)} />
 
       <Text style={styles.inputText}>Ürün Açıklaması</Text>
-      <TextInput style={styles.textArea} placeholder="Ürün Açıklaması" multiline />
+      <TextInput style={styles.textArea} placeholder="Ürün Açıklaması" multiline value={desc} onChangeText={(text) => setDesc(text)} />
 
-      <View style={styles.selectListContainer}>
+      {/* for(let city of cities){
+    city.ilceler  */}
 
-        <View style={styles.selectList}>
-          <Text style={styles.inputText}>İl</Text>
-          <SelectList setSelected={(val) => setSelected(val)} data={city} save="value" />
-        </View>
 
-        <View style={styles.selectList}>
-          <Text style={styles.inputText}>İlçe</Text>
-          <SelectList setSelected={(val) => setSelected(val)} data={district} save="value" />
-        </View>
+      <View>
+        <Text style={styles.inputText}>İl</Text>
+        <TouchableOpacity onPress={toggleCityPicker}>
+          <View style={styles.inputCity}>
+            <Text>{cities[selectedCity].il_adi}</Text>
+          </View>
+        </TouchableOpacity>
+        
+        <Text style={styles.inputText}>İlçe</Text>
+        <TouchableOpacity onPress={toggleDistrictPicker}>
+          <View style={styles.inputCity}>
+            <Text>{}</Text>
+          </View>
+        </TouchableOpacity>
+
+        {showCityPicker && (
+          <View style={styles.pickerWrapper}>
+            <View style={styles.pickerDoneWrapper}>
+              <TouchableOpacity onPress={handleCityConfirm}>
+                <Text style={styles.pickerDoneText}>İptal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleCityConfirm}>
+                <Text style={styles.pickerDoneText}>Tamam</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Picker selectedValue={selectedCity} onValueChange={handleCityChange} mode='dropdown' >
+              {cities.map((val, index) => {
+                return (
+                  <Picker.Item label={val.il_adi} value={index} />
+                )
+              })}
+            </Picker>
+
+            <Picker selectedValue={selectedDistrict} onValueChange={handleDistrictChange} mode='dropdown' >
+              {cities[selectedCity].ilceler.map((val, index) => {
+                return (
+                  <Picker.Item label={val.ilceler} value={index} />
+                )
+              })}
+            </Picker>
+          </View>
+        )}
       </View>
+
+      {/* <View style={styles.selectList}>
+          <Text style={styles.inputText}>İlçe</Text>
+          <SelectList setSelectedDistrict={(val) => setSelectedDistrict(val)} data={district} save="value" />
+        </View> */}
+
 
       <TouchableOpacity style={styles.uploadButton}>
         <Text style={styles.uploadButtonText}>Yükle</Text>
@@ -204,7 +250,28 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%'
   },
-  selectList: {
-    width: 155,
+  inputCity: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  pickerDoneText: {
+    color: '#B97AFF',
+    fontWeight: '700',
+    fontSize: 18
+  },
+  pickerDoneWrapper: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 15,
+  },
+  pickerWrapper: {
+    backgroundColor: '#000000012',
+    borderBottomStartRadius: 15,
+    borderBottomEndRadius: 15,
   }
 });
