@@ -1,5 +1,15 @@
 const cities = [
+
     {
+      "il_adi": "- Bir İl Seçiniz",
+      "ilceler": [
+          {
+          "ilce_adi": "- Bir İlçe Seçiniz"
+          }
+      ]
+    },
+    {
+
         "il_adi": "Adana",
         "plaka_kodu": " 01",
         "alan_kodu": "0322",
@@ -10141,7 +10151,7 @@ cities.sort((a, b) => {
 });
 
 // sort districts alphabetically
-for(let city of cities){
+for (let city of cities) {
     city.ilceler = city.ilceler.sort((a, b) => {
         return a.ilce_adi.localeCompare(b.ilce_adi);
     })

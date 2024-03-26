@@ -4,12 +4,8 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function PickerDrawer({ items = [], onSelect, label, renderItemLabel }) {
     const [pickerVisible, setPickerVisible] = useState(false);
-
     const [selectedValue, setSelectedValue] = useState(0);
     const [currentValue, setCurrentValue] = useState(0);
-
-
-
 
     const selectAndClosePicker = () => {
         setSelectedValue(currentValue);

@@ -44,11 +44,5 @@ const styles = StyleSheet.create({
 		display: 'flex',
 		alignItems: 'center',
 		justifyContent: 'center',
-	},
-	deleteText: {
-		alignSelf: 'stretch',
-		textAlign: 'center',
-		fontSize: 30,
-		color: '#fffa'
 	}
 });

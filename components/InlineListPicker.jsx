@@ -4,12 +4,8 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function InlineListPicker({ items = [], onSelect, label, renderItemLabel }) {
     const [pickerVisible, setPickerVisible] = useState(false);
-
     const [selectedValue, setSelectedValue] = useState(0);
     const [currentValue, setCurrentValue] = useState(0);
-
-
-
 
     const selectAndClosePicker = () => {
         setSelectedValue(currentValue);
@@ -60,7 +56,7 @@ export default function InlineListPicker({ items = [], onSelect, label, renderIt
                     <Picker selectedValue={currentValue} onValueChange={handleValueChange} mode='dropdown' >
                         {items.map((value, index) => {
                             return (
-                                <Picker.Item key={index} label={renderItemLabel(value, index)} value={index} />
+                                <Picker.Item key={index} label={renderItemLabel(value, index)} value={index}  />
                             )
                         })}
                     </Picker>
@@ -81,14 +77,6 @@ const styles = StyleSheet.create({
     inputText: {
         fontSize: 15,
         marginVertical: 10,
-    },
-    input: {
-        height: 40,
-        borderColor: 'gray',
-        borderWidth: 1,
-        padding: 10,
-        borderRadius: 10,
-        marginBottom: 20,
     },
     pickerDoneText: {
         color: '#B97AFF',

@@ -1,7 +1,7 @@
 import { Text, StyleSheet, TouchableOpacity, View } from "react-native";
 
-export default function SelectPhotoButton({onPress}) {
-		
+export default function SelectPhotoButton({ onPress }) {
+
 	return (
 		<TouchableOpacity style={styles.photoButton} onPress={onPress}>
 			<Text style={styles.buttonText}>+</Text>
@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
 	},
 	buttonText: {
 		fontSize: 75,
-        textAlign: 'center',
+		textAlign: 'center',
 		fontWeight: 'bold',
 		color: '#0008'
 	}

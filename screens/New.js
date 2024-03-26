@@ -1,28 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Text, TextInput, TouchableOpacity, Modal, Image, FlatList } from 'react-native';
-import { SelectList } from 'react-native-dropdown-select-list';
 import SelectedPhoto from '../components/SelectedPhoto';
 import SelectPhotoButton from '../components/SelectPhotoButton';
 import SelectionDrawer from '../components/SelectionDrawer';
 import { launchCameraAsync, launchImageLibraryAsync, MediaTypeOptions, CameraType } from 'expo-image-picker';
 import cities from '../data/cities';
-import { Picker } from '@react-native-picker/picker';
 import InlineListPicker from '../components/InlineListPicker';
 
 export default function New() {
-  // const [hasPermission, setHasPermission] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState(['addButton']);
   const [modalVisible, setModalVisible] = useState(false);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
-  const [selectedCity, setSelectedCity] = useState(0);
-
-  const [showCityPicker, setShowCityPicker] = useState(false);
-  const [showDistrictPicker, setShowDistrictPicker] = useState(false);
-
   const [selectedCityIndex, setSelectedCityIndex] = useState(0);
   const [selectedDistrictIndex, setSelectedDistrictIndex] = useState(0);
-  // let camera = useRef(null);
 
   const addPicture = () => {
     setModalVisible(true);
@@ -92,7 +83,6 @@ export default function New() {
           (item === 'addButton') ? (selectedPhotos.length >= 6) ? null : <SelectPhotoButton onPress={addPicture} /> : <SelectedPhoto onDelete={() => { removePicture(index) }} src={item} />
         )}
         />
-
       </View>
 
       <Text style={styles.inputText}>Ürün Başlığı</Text>
@@ -103,7 +93,6 @@ export default function New() {
 
       <InlineListPicker label='İl' items={cities} onSelect={handleCityPicker} renderItemLabel={(value, index) => value.il_adi} />
       <InlineListPicker label='İlçe' items={cities[selectedCityIndex].ilceler} onSelect={handleDistrictPicker} renderItemLabel={(value, index) => value.ilce_adi} />
-
 
       <TouchableOpacity style={styles.uploadButton}>
         <Text style={styles.uploadButtonText}>Yükle</Text>
@@ -124,22 +113,6 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     borderRadius: 10,
     height: 125
-  },
-  photoButton: {
-    alignSelf: 'center',
-    marginVertical: 10,
-    marginHorizontal: 4,
-    borderWidth: 2,
-    borderColor: '#B97AFF',
-    backgroundColor: '#DBB9EC',
-    padding: 10,
-    borderRadius: 5,
-    width: 100,
-    height: 100
-  },
-  buttonText: {
-    textAlign: 'center',
-    fontSize: 45,
   },
   inputText: {
     fontSize: 15,
@@ -171,30 +144,5 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     color: 'white',
     textAlign: 'center',
-  },
-
-  inputCity: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  pickerDoneText: {
-    color: '#B97AFF',
-    fontWeight: '700',
-    fontSize: 18
-  },
-  pickerDoneWrapper: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 15,
-  },
-  pickerWrapper: {
-    backgroundColor: '#000000012',
-    borderBottomStartRadius: 15,
-    borderBottomEndRadius: 15,
   }
 });
