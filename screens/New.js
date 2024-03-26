@@ -7,6 +7,7 @@ import SelectionDrawer from '../components/SelectionDrawer';
 import { launchCameraAsync, launchImageLibraryAsync, MediaTypeOptions, CameraType } from 'expo-image-picker';
 import cities from '../data/cities';
 import { Picker } from '@react-native-picker/picker';
+import InlineListPicker from '../components/InlineListPicker';
 
 export default function New() {
   // const [hasPermission, setHasPermission] = useState(false);
@@ -15,11 +16,12 @@ export default function New() {
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [selectedCity, setSelectedCity] = useState(0);
-  const [selectedDistrict, setSelectedDistrict] = useState(cities[0].ilceler[0]);
-  // const [showPicker, setShowPicker] = useState(false);
+
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [showDistrictPicker, setShowDistrictPicker] = useState(false);
 
+  const [selectedCityIndex, setSelectedCityIndex] = useState(0);
+  const [selectedDistrictIndex, setSelectedDistrictIndex] = useState(0);
   // let camera = useRef(null);
 
   const addPicture = () => {
@@ -27,14 +29,6 @@ export default function New() {
   }
 
   const takePicture = async () => {
-
-    // if (!hasPermission) {
-    //   const { status } = await Camera.requestCameraPermissionsAsync();
-    //   let _hasPermission = status === 'granted';
-    //   setHasPermission(_hasPermission);
-
-    //   if (!_hasPermission) return;
-    // }
     if (selectedPhotos.length >= 6) return;
     const result = await launchCameraAsync({
       aspect: [1, 1],
@@ -49,7 +43,6 @@ export default function New() {
     let newPhotos = [...selectedPhotos];
     newPhotos.splice(1, 0, result.assets[0].uri);
     _setSelectedPhotos(newPhotos);
-
   };
 
   const selectFromGallery = async () => {
@@ -82,28 +75,13 @@ export default function New() {
     _setSelectedPhotos(newPhotos);
   }
 
-
-  const toggleCityPicker = () => {
-    setShowCityPicker(!showCityPicker);
+  const handleCityPicker = (value, index) => {
+    setSelectedCityIndex(index);
   };
 
-  const handleCityChange = (val, index) => {
-    setSelectedCity(index);
-  };
-
-  const handleCityConfirm = () => {
-    toggleCityPicker(); // Picker'ı kapat
-  };
-
-  const toggleDistrictPicker = () => {
-    setShowDistrictPicker(!showDistrictPicker);
-  };
-  const handleDistrictChange = (val, index) => {
-    setSelectedDistrict(selectedCity.ilceler(index))
+  const handleDistrictPicker = (value, index) => {
+    setSelectedDistrictIndex(index);
   }
-  const handleDistrictConfirm = () => {
-    toggleDistrictPicker(); // Picker'ı kapat
-  };
 
   return (
     <ScrollView style={styles.container}>
@@ -123,59 +101,8 @@ export default function New() {
       <Text style={styles.inputText}>Ürün Açıklaması</Text>
       <TextInput style={styles.textArea} placeholder="Ürün Açıklaması" multiline value={desc} onChangeText={(text) => setDesc(text)} />
 
-      {/* for(let city of cities){
-    city.ilceler  */}
-
-
-      <View>
-        <Text style={styles.inputText}>İl</Text>
-        <TouchableOpacity onPress={toggleCityPicker}>
-          <View style={styles.inputCity}>
-            <Text>{cities[selectedCity].il_adi}</Text>
-          </View>
-        </TouchableOpacity>
-
-        <Text style={styles.inputText}>İlçe</Text>
-        <TouchableOpacity onPress={toggleDistrictPicker}>
-          <View style={styles.inputCity}>
-            <Text>{ }</Text>
-          </View>
-        </TouchableOpacity>
-
-        {showCityPicker && (
-          <View style={styles.pickerWrapper}>
-            <View style={styles.pickerDoneWrapper}>
-              <TouchableOpacity onPress={handleCityConfirm}>
-                <Text style={styles.pickerDoneText}>İptal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleCityConfirm}>
-                <Text style={styles.pickerDoneText}>Tamam</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Picker selectedValue={selectedCity} onValueChange={handleCityChange} mode='dropdown' >
-              {cities.map((val, index) => {
-                return (
-                  <Picker.Item label={val.il_adi} value={index} />
-                )
-              })}
-            </Picker>
-
-            <Picker selectedValue={selectedDistrict} onValueChange={handleDistrictChange} mode='dropdown' >
-              {cities[selectedCity].ilceler.map((val, index) => {
-                return (
-                  <Picker.Item label={val.ilceler} value={index} />
-                )
-              })}
-            </Picker>
-          </View>
-        )}
-      </View>
-
-      {/* <View style={styles.selectList}>
-          <Text style={styles.inputText}>İlçe</Text>
-          <SelectList setSelectedDistrict={(val) => setSelectedDistrict(val)} data={district} save="value" />
-        </View> */}
+      <InlineListPicker label='İl' items={cities} onSelect={handleCityPicker} renderItemLabel={(value, index) => value.il_adi} />
+      <InlineListPicker label='İlçe' items={cities[selectedCityIndex].ilceler} onSelect={handleDistrictPicker} renderItemLabel={(value, index) => value.ilce_adi} />
 
 
       <TouchableOpacity style={styles.uploadButton}>
@@ -245,11 +172,7 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
   },
-  selectListContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%'
-  },
+
   inputCity: {
     height: 40,
     borderColor: 'gray',

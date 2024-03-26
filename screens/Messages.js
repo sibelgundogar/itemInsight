@@ -11,7 +11,7 @@ const Stack = createStackNavigator();
 export default function Messages() {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="Mesajlar" component={Tabs} options={{ headerShown: true }} />
+      <Stack.Screen name="Messages" component={Tabs} options={{ headerShown: true, title: "Mesajlar" }} />
       <Stack.Screen name="MesajDetay" component={MesajDetay} options={{ headerShown: true }} />
     </Stack.Navigator>
   );

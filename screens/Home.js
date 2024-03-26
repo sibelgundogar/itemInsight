@@ -22,12 +22,12 @@ export default function Home() {
 function Navbar() {
   return (
     <Tab.Navigator
-      initialRouteName="Home" //varsayılan olarak açılacak sayfa
+      initialRouteName="HomeParent" //varsayılan olarak açılacak sayfa
       screenOptions={{
         tabBarActiveTintColor: '#B97AFF',
       }}>
       <Tab.Screen
-        name="Home"
+        name="HomeParent"
         component={HomeWrapper}
         options={{
           headerShown: false,
@@ -38,7 +38,7 @@ function Navbar() {
         }}
       />
       <Tab.Screen
-        name="Mesajlar"
+        name="MessagesParent"
         component={Messages}
         options={{
           headerBackVisible: false,
