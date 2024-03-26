@@ -98,7 +98,7 @@ export default function New() {
   const toggleDistrictPicker = () => {
     setShowDistrictPicker(!showDistrictPicker);
   };
-  const handleDistrictChange = (val, index) =>{
+  const handleDistrictChange = (val, index) => {
     setSelectedDistrict(selectedCity.ilceler(index))
   }
   const handleDistrictConfirm = () => {
@@ -134,11 +134,11 @@ export default function New() {
             <Text>{cities[selectedCity].il_adi}</Text>
           </View>
         </TouchableOpacity>
-        
+
         <Text style={styles.inputText}>İlçe</Text>
         <TouchableOpacity onPress={toggleDistrictPicker}>
           <View style={styles.inputCity}>
-            <Text>{}</Text>
+            <Text>{ }</Text>
           </View>
         </TouchableOpacity>
 
