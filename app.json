@@ -1,5 +1,14 @@
 {
   "expo": {
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera"
+        }
+      ]
+    
+    ],
     "name": "itemInsight",
     "slug": "itemInsight",
     "version": "1.0.0",
@@ -15,6 +24,9 @@
       "**/*"
     ],
     "ios": {
+      "infoPlist": {
+        "NSCameraUsageDescription": "Sweet needs camera permisions to allow you to post photos."
+      },
       "supportsTablet": true
     },
     "android": {

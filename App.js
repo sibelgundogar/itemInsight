@@ -34,8 +34,8 @@ export default function App() {
                         <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
                     ) : (
                         <>
-                            <Stack.Screen name="Signin" component={Signin} options={{ headerShown: false }} />
                             <Stack.Screen name="Splash" component={Splash} options={{ headerShown: false }} />
+                            <Stack.Screen name="Signin" component={Signin} options={{ headerShown: false }} />
                             <Stack.Screen name="Signup" component={Signup} options={{ headerShown: false }} />
                         </>
                     )}

@@ -6,6 +6,10 @@ import SelectionDrawer from '../components/SelectionDrawer';
 import { launchCameraAsync, launchImageLibraryAsync, MediaTypeOptions, CameraType } from 'expo-image-picker';
 import cities from '../data/cities';
 import InlineListPicker from '../components/InlineListPicker';
+import { Camera } from 'expo-camera';
+import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import firestore from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function New() {
   const [selectedPhotos, setSelectedPhotos] = useState(['addButton']);
@@ -14,6 +18,8 @@ export default function New() {
   const [desc, setDesc] = useState('');
   const [selectedCityIndex, setSelectedCityIndex] = useState(0);
   const [selectedDistrictIndex, setSelectedDistrictIndex] = useState(0);
+  const db = getFirestore();
+  const storage = getStorage();
 
   const addPicture = () => {
     setModalVisible(true);
@@ -21,6 +27,13 @@ export default function New() {
 
   const takePicture = async () => {
     if (selectedPhotos.length >= 6) return;
+    const { status } = await Camera.requestCameraPermissionsAsync();
+
+    if (status !== 'granted') {
+      console.log('Kamera izni reddedildi.');
+      return;
+    }
+
     const result = await launchCameraAsync({
       aspect: [1, 1],
       allowsEditing: true,
@@ -74,6 +87,49 @@ export default function New() {
     setSelectedDistrictIndex(index);
   }
 
+  const handleUpload = async () => {
+    try {
+      console.log("starttt");
+
+      // Resimleri Firebase Storage'a yükle
+      const photoURLs = [];
+      for (const photo of selectedPhotos) {
+        if (photo !== 'addButton') {
+          const fileName = photo.split('/').pop();
+          const fileRef = ref(storage, fileName);
+          console.log("fetch");
+          const response = await fetch(photo);
+          console.log("bloob");
+          const blob = await response.blob();
+          console.log("upload");
+          await uploadBytes(fileRef, blob);
+          console.log("A");
+          const downloadURL = await getDownloadURL(fileRef);
+          console.log("C");
+          photoURLs.push(downloadURL);
+        }
+      }
+      
+      console.log("B");
+
+      const productData = {
+        title: title,
+        description: desc,
+        city: cities[selectedCityIndex].il_adi,
+        district: cities[selectedCityIndex].ilceler[selectedDistrictIndex].ilce_adi,
+        photos: photoURLs
+
+      };
+      //ürün yüklendi alerti ok a basmalı falan ekleyebilirsin
+
+
+      const docRef = await addDoc(collection(db, "items"), productData);
+      console.log("Ürün başarıyla eklendi:", docRef.id);
+    } catch (error) {
+      console.error('Ürün yükleme hatası:', error);
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <SelectionDrawer visible={modalVisible} onClose={() => { setModalVisible(false) }} options={[{ text: 'Camera', action: takePicture }, { text: 'Gallery', action: selectFromGallery }]} />
@@ -95,7 +151,7 @@ export default function New() {
       <InlineListPicker label='İlçe' items={cities[selectedCityIndex].ilceler} onSelect={handleDistrictPicker} renderItemLabel={(value, index) => value.ilce_adi} />
 
       <TouchableOpacity style={styles.uploadButton}>
-        <Text style={styles.uploadButtonText}>Yükle</Text>
+        <Text style={styles.uploadButtonText} onPress={handleUpload}>Yükle</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -136,7 +192,7 @@ const styles = StyleSheet.create({
     verticalAlign: 'top',
   },
   uploadButton: {
-    marginVertical: 40,
+    marginVertical: 20,
     backgroundColor: '#B97AFF',
     padding: 10,
     borderRadius: 5,
