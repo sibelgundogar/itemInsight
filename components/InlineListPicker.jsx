@@ -31,13 +31,16 @@ export default function InlineListPicker({ items = [], onSelect, label, renderIt
         setSelectedValue(0);
     }, [items])
 
+	// TODO: bu şekilde kontrol etmek yerine useEffect ile yapılmaya çalışılan renderdan önce yapılabilir mi bakılmalı
+	const correctedValue = currentValue<items.length?currentValue:0
+
     return (
         <View>
             <Text style={styles.inputText}>{label}</Text>
 
             <View style={styles.inputCity}>
                 <TouchableOpacity style={styles.pickerButton} onPress={pickerVisible ? selectAndClosePicker : openPicker}>
-                    <Text>{renderItemLabel(items[currentValue], currentValue)}</Text>
+                    <Text>{renderItemLabel(items[correctedValue], correctedValue)}</Text>
                 </TouchableOpacity>
             </View>
 
