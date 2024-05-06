@@ -50,7 +50,7 @@ function Navbar() {
         }}
       />
       <Tab.Screen
-        name="Yeni"
+        name="New"
         component={New}
         options={{
           tabBarLabel: 'Yeni',
