@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Text, TextInput, TouchableOpacity, Modal, Image, FlatList } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, TextInput, TouchableOpacity, Modal, Image, FlatList, Alert } from 'react-native';
 import SelectedPhoto from '../components/SelectedPhoto';
 import SelectPhotoButton from '../components/SelectPhotoButton';
 import SelectionDrawer from '../components/SelectionDrawer';
@@ -89,8 +89,11 @@ export default function New({navigation}) {
 	}
 
 	const handleUpload = async () => {
+    if (selectedPhotos.length <= 1 || !title || !desc || selectedCityIndex === 0) {
+      Alert.alert('Lütfen tüm alanları doldurun.');
+      return;
+    }
 		try {
-
 			// Resimleri Firebase Storage'a yükle
 			const photoURLs = [];
 			for (const photo of selectedPhotos) {
@@ -99,9 +102,9 @@ export default function New({navigation}) {
 					const fileRef = ref(storage, fileName);
 					const response = await fetch(photo);
 					const blob = await response.blob();
-					console.log("uploading")
+					// console.log("uploading")
 					await uploadBytes(fileRef, blob);
-					console.log("uploaded");
+					// console.log("uploaded");
 					const downloadURL = await getDownloadURL(fileRef);
 					photoURLs.push(downloadURL);
 				}
@@ -116,14 +119,15 @@ export default function New({navigation}) {
 				photos: photoURLs
 
 			};
-			//ürün yüklendi alerti ok a basmalı falan ekleyebilirsin
-
 
 			const docRef = await addDoc(collection(db, "items"), productData);
 			console.log("Ürün başarıyla eklendi:", docRef.id);
+      Alert.alert('Tebrikler', 'Ürün başarıyla eklendi.');
+     //sayfayı yeniliyor formun boşaltılması için
 			navigation.replace("Home", {screen: "New"})
 		} catch (error) {
 			console.error('Ürün yükleme hatası:', error);
+      Alert.alert('Hata', 'Ürün yüklenirken bir hatayla karşılaşıldı.');
 		}
 	};
 
