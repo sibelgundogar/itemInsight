@@ -80,32 +80,40 @@ function Navbar() {
 //ana sayfanın kodları
 function HomeScreen({ navigation }) {
   const [items, setItems] = useState([]);
+  const [refreshing, setRefreshing] = useState(false); // Yenileme durumunu izlemek için state
+
+
   const db = getFirestore();
+  // Verilerin yenilenmesini sağlayacak işlev
+  const refreshItems = async () => {
+    setRefreshing(true); // Yenileme başladığında refreshing state'ini true olarak ayarla
+    try {
+      const querySnapshot = await getDocs(collection(db, 'items'));
+      const itemsData = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (!data.isComplete) { // Sadece isComplete değeri false olan ürünler ekleniyor
+          itemsData.push({
+            id: doc.id,
+            title: data.title,
+            description: data.description,
+            city: data.city,
+            district: data.district,
+            photos: data.photos
+          });
+        }
+      });
+      setItems(itemsData);
+    } catch (error) {
+      console.error('Verileri alırken bir hata oluştu:', error);
+    } finally {
+      setRefreshing(false); // Yenileme tamamlandığında refreshing state'ini false olarak ayarla
+    }
+  };
   useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'items'));
-        const itemsData = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (!data.isComplete) { // Sadece isComplete değeri false olan ürünler ekleniyor
-            itemsData.push({
-              id: doc.id,
-              title: data.title,
-              description: data.description,
-              city: data.city,
-              district: data.district,
-              photos: data.photos
-            });
-          }
-        });
-        setItems(itemsData);
-      } catch (error) {
-        console.error('Verileri alırken bir hata oluştu:', error);
-      }
-    };
-    fetchItems();
+    refreshItems(); // Sayfa yüklendiğinde verileri ilk kez getir
   }, []);
+
   
 
   // Her bir ürünü render ediyor
@@ -123,7 +131,10 @@ function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <SearchBar style={styles.searchbar} placeholder="Bul..." lightTheme />
-      <FlatList data={items} renderItem={renderItem} keyExtractor={(item) => item.id.toString()} numColumns={2} />
+      <FlatList data={items} renderItem={renderItem} keyExtractor={(item) => item.id.toString()} numColumns={2}
+      refreshing={refreshing} // FlatList'in yenileme durumunu göstermesi için refreshing prop'unu ayarla
+      onRefresh={refreshItems} // FlatList yenileme işlevini belirle
+       />
     </View>
   );
 }

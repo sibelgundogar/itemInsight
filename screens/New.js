@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Text, TextInput, TouchableOpacity, Image, FlatList, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, TextInput, TouchableOpacity, Image, FlatList, Alert, ActivityIndicator, TouchableWithoutFeedback } from 'react-native';
 import SelectedPhoto from '../components/SelectedPhoto';
 import SelectPhotoButton from '../components/SelectPhotoButton';
 import SelectionDrawer from '../components/SelectionDrawer';
@@ -20,6 +20,7 @@ export default function New({ navigation }) {
   const [desc, setDesc] = useState('');
   const [selectedCityIndex, setSelectedCityIndex] = useState(0);
   const [selectedDistrictIndex, setSelectedDistrictIndex] = useState(0);
+  const [loading, setLoading] = useState(false); // Yükleme durumu için state
   const db = getFirestore();
   const storage = getStorage();
   const { currentUser } = getAuth(); // Kullanıcıyı aldık
@@ -96,6 +97,7 @@ export default function New({ navigation }) {
       return;
     }
     try {
+      setLoading(true);
       // Resimleri Firebase Storage'a yükle
       const photoURLs = [];
       for (const photo of selectedPhotos) {
@@ -131,38 +133,57 @@ export default function New({ navigation }) {
     } catch (error) {
       console.error('Ürün yükleme hatası:', error);
       Alert.alert('Hata', 'Ürün yüklenirken bir hatayla karşılaşıldı.');
+    }finally {
+      setLoading(false); // Yükleme tamamlandığında loading state'ini false olarak ayarla
     }
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <SelectionDrawer visible={modalVisible} onClose={() => { setModalVisible(false) }} options={[{ text: 'Camera', action: takePicture }, { text: 'Gallery', action: selectFromGallery }]} />
+    <TouchableWithoutFeedback disabled={loading} style={styles.container}>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        {loading && <ActivityIndicator style={styles.activityIndicator} size="large" color="#B97AFF" />}
+        <SelectionDrawer visible={modalVisible} onClose={() => { setModalVisible(false) }} options={[{ text: 'Camera', action: takePicture }, { text: 'Gallery', action: selectFromGallery }]} />
 
-      <View style={styles.photoContainer}>
-        <FlatList horizontal data={selectedPhotos} renderItem={({ item, index }) => (
-          (item === 'addButton') ? (selectedPhotos.length >= 6) ? null : <SelectPhotoButton onPress={addPicture} /> : <SelectedPhoto onDelete={() => { removePicture(index) }} src={item} />
-        )}
-        />
-      </View>
+        <View style={styles.photoContainer}>
+          <FlatList horizontal data={selectedPhotos} renderItem={({ item, index }) => (
+            (item === 'addButton') ? (selectedPhotos.length >= 6) ? null : <SelectPhotoButton onPress={addPicture} /> : <SelectedPhoto onDelete={() => { removePicture(index) }} src={item} />
+          )}
+          />
+        </View>
 
-      <Text style={styles.inputText}>Ürün Başlığı</Text>
-      <TextInput style={styles.input} placeholder="Ürün Başlığı" value={title} onChangeText={(text) => setTitle(text)} />
+        <Text style={styles.inputText}>Ürün Başlığı</Text>
+        <TextInput style={styles.input} placeholder="Ürün Başlığı" value={title} onChangeText={(text) => setTitle(text)} />
 
-      <Text style={styles.inputText}>Ürün Açıklaması</Text>
-      <TextInput style={styles.textArea} placeholder="Ürün Açıklaması" multiline value={desc} onChangeText={(text) => setDesc(text)} />
+        <Text style={styles.inputText}>Ürün Açıklaması</Text>
+        <TextInput style={styles.textArea} placeholder="Ürün Açıklaması" multiline value={desc} onChangeText={(text) => setDesc(text)} />
 
-      <InlineListPicker label='İl' items={cities} onSelect={handleCityPicker} renderItemLabel={(value, index) => value.il_adi} />
-      <InlineListPicker label='İlçe' items={cities[selectedCityIndex].ilceler} onSelect={handleDistrictPicker} renderItemLabel={(value, index) => { print(value); return value.ilce_adi; }} />
+        <InlineListPicker label='İl' items={cities} onSelect={handleCityPicker} renderItemLabel={(value, index) => value.il_adi} />
+        <InlineListPicker label='İlçe' items={cities[selectedCityIndex].ilceler} onSelect={handleDistrictPicker} renderItemLabel={(value, index) => { print(value); return value.ilce_adi; }} />
 
-      <TouchableOpacity style={styles.uploadButton}>
-        <Text style={styles.uploadButtonText} onPress={handleUpload}>Yükle</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity style={[styles.uploadButton, { opacity: loading ? 0.5 : 1 }]} onPress={handleUpload} disabled={loading}>
+          <Text style={styles.uploadButtonText}>Yükle</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    position: 'relative', // Sayfa içinde mutlak konumlandırma yapmak için gerekli
+  },
+  activityIndicator: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // İsteğe bağlı, yükleme işareti arka planınızı karartmak için
+  },
+  contentContainer: {
     padding: 20,
     marginHorizontal: 10
   },
@@ -170,7 +191,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#B97AFF',
     borderStyle: 'dashed',
-    marginVertical: 20,
+    marginBottom: 20,
     borderRadius: 10,
     height: 125
   },
