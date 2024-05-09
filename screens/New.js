@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Text, TextInput, TouchableOpacity, Modal, Image, FlatList, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, TextInput, TouchableOpacity, Image, FlatList, Alert } from 'react-native';
 import SelectedPhoto from '../components/SelectedPhoto';
 import SelectPhotoButton from '../components/SelectPhotoButton';
 import SelectionDrawer from '../components/SelectionDrawer';
@@ -11,6 +11,7 @@ import { getFirestore, collection, addDoc } from 'firebase/firestore';
 import firestore from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigation } from '@react-navigation/native';
+import { getAuth } from 'firebase/auth';
 
 export default function New({ navigation }) {
   const [selectedPhotos, setSelectedPhotos] = useState(['addButton']);
@@ -21,6 +22,7 @@ export default function New({ navigation }) {
   const [selectedDistrictIndex, setSelectedDistrictIndex] = useState(0);
   const db = getFirestore();
   const storage = getStorage();
+  const { currentUser } = getAuth(); // Kullanıcıyı aldık
 
   const addPicture = () => {
     setModalVisible(true);
@@ -112,6 +114,7 @@ export default function New({ navigation }) {
 
 
       const productData = {
+        userId: currentUser.uid, // Kullanıcı kimliğini ekle
         title: title,
         description: desc,
         city: cities[selectedCityIndex].il_adi,

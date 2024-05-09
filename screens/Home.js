@@ -137,7 +137,7 @@ function ItemDetailScreen({ route }) {
   
 
   return (
-    <View style={styles.container}>
+    <View style={styles.photoContainer}>
       <FlatList
         horizontal
         data={photos}
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   itemImage: {
     width: '95%',
     height: 120,
-    borderRadius: 5,
+    borderRadius: 5
   },
   itemName: {
     fontSize: 16,
@@ -209,10 +209,11 @@ const styles = StyleSheet.create({
   },
   itemDetailImage: {
     alignSelf: 'center',
-    width: 350,
-    height: 250,
+    width: 370,
+    height: 370,
     borderRadius: 5,
     marginBottom: 15,
+    marginHorizontal:10
   },
   itemDetailName: {
     marginLeft: 20,
@@ -244,4 +245,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
   },
+  photoContainer:{
+    marginVertical:20,
+  }
 });

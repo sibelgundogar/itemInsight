@@ -1,49 +1,64 @@
-import React from 'react';
-import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { FontAwesome } from '@expo/vector-icons';
 import { firebaseAuth } from '../firebase';
+import { getFirestore, collection, getDocs, query, where, doc, deleteDoc } from 'firebase/firestore';
 
 const Stack = createStackNavigator();
 
-// profil ve ürün detayı sayfaları için navigator
 export default function Profile() {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="Profil" component={ProfileScreen} options={{ headerShown: true, headerBackVisible: false, }} />
+      <Stack.Screen name="Profil" component={ProfileScreen} options={{ headerShown: true, headerBackVisible: false }} />
       <Stack.Screen name="Ürün Detayı" component={ProductDetailScreen} />
     </Stack.Navigator>
   );
 }
 
 function ProfileScreen({ navigation }) {
-  // Yüklediğim ilanlar kısmı için örnek ürünler
-  const products = [
-    {
-      id: 1,
-      name: 'Cüzdan',
-      location: 'Altıeylül, Balıkesir',
-      image: require('../images/cuzdan.jpg'),
-      desc: 'Siyah deri bir cüzdan. İçinde kimilk veya kredi kartı yok, NEF civarında bulunmuştur.',
-    },
-    {
-      id: 2,
-      name: 'Kolye',
-      location: 'Karesi, Balıkesir',
-      image: require('../images/kolye.jpg'),
-      desc: 'Altın rengi kolye. Karesi Belediye Binasında bulunmuştur. Sahibi mesaj atarak ulaşabilir.',
-    },
-  ];
+  const [userProducts, setUserProducts] = useState([]);
+  const currentUser = firebaseAuth.currentUser;
 
-  // ürünleri render etmek için
+  const fetchUserProducts = useCallback(async () => {
+    try {
+      const db = getFirestore();
+      const q = query(collection(db, 'items'), where('userId', '==', currentUser.uid));
+      const querySnapshot = await getDocs(q);
+      const productsData = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        productsData.push({
+          id: doc.id,
+          title: data.title,
+          description: data.description,
+          city: data.city,
+          district: data.district,
+          photos: data.photos
+        });
+      });
+      setUserProducts(productsData);
+    } catch (error) {
+      console.error('Kullanıcı ürünlerini alırken bir hata oluştu:', error);
+    }
+  }, [currentUser.uid]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchUserProducts();
+    });
+
+    return unsubscribe;
+  }, [navigation, fetchUserProducts]);
+
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.productItemContainer}
       onPress={() => navigation.navigate('Ürün Detayı', { product: item })}>
       <View style={styles.productItem}>
-        <Image source={item.image} style={styles.productImage} resizeMode="cover" />
-        <Text style={styles.productName}>{item.name}</Text>
-        <Text style={styles.productLocation}>{item.location}</Text>
+        <Image source={{ uri: item.photos[0] }} style={styles.productImage} resizeMode="cover" />
+        <Text style={styles.productName}>{item.title}</Text>
+        <Text style={styles.productLocation}>{item.city}, {item.district}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -51,7 +66,7 @@ function ProfileScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Profilim</Text>
-      <Text style={styles.hiText}>Merhaba, gundogarsibel</Text>
+      <Text style={styles.hiText}>Merhaba</Text>
       <TouchableOpacity style={styles.exitContainer} onPress={() => firebaseAuth.signOut()}>
         <Text style={styles.exitText}>Çıkış yap</Text>
         <TouchableOpacity style={styles.exitButton} onPress={() => firebaseAuth.signOut()}>
@@ -60,25 +75,61 @@ function ProfileScreen({ navigation }) {
       </TouchableOpacity>
 
       <Text style={styles.header}>Yüklediğim İlanlar</Text>
-        <FlatList
-          data={products}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={2}
-        />
+      <FlatList
+        data={userProducts}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        extraData={userProducts} // Added extraData to force re-render when userProducts change
+      />
     </View>
   );
 }
 
-// Ürün detay sayfası
-function ProductDetailScreen({ route }) {
+function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params;
+
+
+const handleDelete = async () => {
+  Alert.alert(
+    'Ürünü Sil',
+    'Bu ürünü silmek istediğinize emin misiniz?',
+    [
+      {
+        text: 'Hayır',
+        style: 'cancel',
+      },
+      {
+        text: 'Evet',
+        onPress: async () => {
+          try {
+            const db = getFirestore();
+            const productRef = doc(db, 'items', product.id);
+            await deleteDoc(productRef);
+            navigation.goBack();
+          } catch (error) {
+            console.error('Ürünü silerken bir hata oluştu:', error);
+          }
+        },
+      },
+    ],
+    { cancelable: false }
+  );
+};
+
   return (
     <View style={styles.container}>
-      <Image source={product.image} style={styles.productDetailImage} resizeMode="cover" />
-      <Text style={styles.productDetailName}>{product.name}</Text>
-      <Text style={styles.productDetailLocation}>{product.location}</Text>
-      <Text style={styles.productDetailDesc}>{product.desc}</Text>
+      <FlatList
+        horizontal
+        data={product.photos}
+        keyExtractor={(photo, index) => index.toString()}
+        renderItem={({ item }) => (
+          <Image source={{ uri: item }} style={styles.productDetailImage} resizeMode="cover" />
+        )}
+      />
+      <Text style={styles.productDetailName}>{product.title}</Text>
+      <Text style={styles.productDetailLocation}>{product.city}, {product.district}</Text>
+      <Text style={styles.productDetailDesc}>{product.description}</Text>
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.iconButton}>
           <FontAwesome name="check" size={24} color="green" />
@@ -86,7 +137,7 @@ function ProductDetailScreen({ route }) {
         <TouchableOpacity style={styles.iconButton}>
           <FontAwesome name="edit" size={24} color="yellow" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
+        <TouchableOpacity style={styles.iconButton} onPress={handleDelete}>
           <FontAwesome name="trash" size={24} color="red" />
         </TouchableOpacity>
       </View>
@@ -135,11 +186,12 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   productDetailImage: {
-    width: 350,
-    height: 250,
-    borderRadius: 5,
     alignSelf: 'center',
+    width: 370,
+    height: 370,
+    borderRadius: 5,
     marginBottom: 15,
+    marginHorizontal:10
   },
   productDetailName: {
     marginLeft: 20,

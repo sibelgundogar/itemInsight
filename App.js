@@ -30,7 +30,7 @@ export default function App() {
                     {
                         //buradaki userdaki ünlem kaldır sign in için sormasın diye koydun
                     }
-                    {!user ? (
+                    {user ? (
                         <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
                     ) : (
                         <>
