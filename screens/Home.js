@@ -24,12 +24,12 @@ export default function Home() {
 function Navbar() {
   return (
     <Tab.Navigator
-      initialRouteName="HomeParent" //varsayılan olarak açılacak sayfa
+      initialRouteName="Main" //varsayılan olarak açılacak sayfa
       screenOptions={{
         tabBarActiveTintColor: '#B97AFF',
       }}>
       <Tab.Screen
-        name="HomeParent"
+        name="Main"
         component={HomeWrapper}
         options={{
           headerShown: false,
@@ -88,14 +88,16 @@ function HomeScreen({ navigation }) {
         const itemsData = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          itemsData.push({
-            id: doc.id,
-            title: data.title,
-            description: data.description,
-            city: data.city,
-            district: data.district,
-            photos: data.photos
-          });
+          if (!data.isComplete) { // Sadece isComplete değeri false olan ürünler ekleniyor
+            itemsData.push({
+              id: doc.id,
+              title: data.title,
+              description: data.description,
+              city: data.city,
+              district: data.district,
+              photos: data.photos
+            });
+          }
         });
         setItems(itemsData);
       } catch (error) {
@@ -104,6 +106,7 @@ function HomeScreen({ navigation }) {
     };
     fetchItems();
   }, []);
+  
 
   // Her bir ürünü render ediyor
   const renderItem = ({ item }) => (

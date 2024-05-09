@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, StyleSheet, Text, Image, TouchableOpacity, TextInput } from 'react-native';
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+// import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { FontAwesome } from '@expo/vector-icons';
 
-const Tab = createMaterialTopTabNavigator();
+// const Tab = createMaterialTopTabNavigator();
 const Stack = createStackNavigator();
 
 //Mesajlar ve mesaj detayı sayfasının stack navigatoru
@@ -20,10 +20,11 @@ export default function Messages() {
 //Mesajlar sayfasındaki Gelen Ve Gönderilen mesaj sayfalarına geçiş için navigator
 function Tabs() {
   return (
-    <Tab.Navigator>
-      <Tab.Screen name="Gelen Mesajlar" component={Inbox} />
-      <Tab.Screen name="Gönderilen Mesajlar" component={Sent} />
-    </Tab.Navigator>
+    // Tab.Navigator
+    <Stack.Navigator> 
+      <Stack.Screen name="Gelen Mesajlar" component={Inbox} />
+      <Stack.Screen name="Gönderilen Mesajlar" component={Sent} />
+    </Stack.Navigator>
   );
 }
 

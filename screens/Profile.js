@@ -69,10 +69,10 @@ function ProfileScreen({ navigation }) {
     <TouchableOpacity
       style={styles.productItemContainer}
       onPress={() => navigation.navigate('Ürün Detayı', { product: item })}>
-      <View style={styles.productItem}>
+      <View style={completedProducts.includes(item) ? styles.completedProductItem : styles.productItem}>
         <Image source={{ uri: item.photos[0] }} style={styles.productImage} resizeMode="cover" />
-        <Text style={styles.productName}>{item.title}</Text>
-        <Text style={styles.productLocation}>{item.city}, {item.district}</Text>
+        <Text style={completedProducts.includes(item) ? styles.completedProductName : styles.productName}>{item.title}</Text>
+        <Text style={completedProducts.includes(item) ? styles.completedProductLocation : styles.productLocation}>{item.city}, {item.district}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -150,11 +150,13 @@ function ProductDetailScreen({ route, navigation }) {
         isComplete: true
       });
       Alert.alert('Tebrikler', 'Ürünü sahibine ulaştırdınız.');
+      navigation.goBack(); // Kullanıcıyı profil sayfasına geri döndür
     } catch (error) {
       console.error('Ürünü güncellerken bir hata oluştu:', error);
       Alert.alert('Hata', 'Ürün güncellenirken bir hata oluştu.');
     }
   };
+  
 
   return (
     <View style={styles.container}>
@@ -290,5 +292,31 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
   },
+
+  completedProductItem: {
+    // Apply opacity to make completed product items appear faded
+    opacity: 0.4,
+    width: 170,
+    borderColor: '#B97AFF',
+    borderWidth: 2,
+    borderRadius: 15,
+    flex: 1,
+    alignItems: 'center',
+    padding: 10,
+    marginBottom: 5,
+  },
+  completedProductName: {
+    // Use a lighter color for text in the completed product items
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 10,
+    color: 'gray', // Adjust text color
+  },
+  completedProductLocation: {
+    fontSize: 14,
+    color: '#6700A9',
+    marginTop: 5,
+    color: 'gray', // Adjust text color
+  }
 });
 
