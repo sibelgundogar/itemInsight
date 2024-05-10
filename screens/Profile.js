@@ -78,8 +78,8 @@ function ProfileScreen({ navigation }) {
   );
 
   return (
-
-    <ScrollView style={styles.container}>
+    //buralar scrollview olacak
+     <View style={styles.container}> 
       <Text style={styles.hiheader}>Profilim</Text>
       <Text style={styles.hiText}>Merhaba</Text>
       <TouchableOpacity style={styles.exitContainer} onPress={() => firebaseAuth.signOut()}>
@@ -108,7 +108,7 @@ function ProfileScreen({ navigation }) {
       />
 
 
-    </ScrollView>
+    </View> //buralar scrollview
   );
 }
 
@@ -150,13 +150,15 @@ function ProductDetailScreen({ route, navigation }) {
         isComplete: true
       });
       Alert.alert('Tebrikler', 'Ürünü sahibine ulaştırdınız.');
-      navigation.goBack(); // Kullanıcıyı profil sayfasına geri döndür
+      navigation.goBack();
     } catch (error) {
       console.error('Ürünü güncellerken bir hata oluştu:', error);
       Alert.alert('Hata', 'Ürün güncellenirken bir hata oluştu.');
     }
   };
   
+  // Bu kontrol, ürün tamamlandıysa butonları devre dışı bırakır
+  const isCompleted = product.isComplete;
 
   return (
     <View style={styles.container}>
@@ -172,14 +174,23 @@ function ProductDetailScreen({ route, navigation }) {
       <Text style={styles.productDetailLocation}>{product.city}, {product.district}</Text>
       <Text style={styles.productDetailDesc}>{product.description}</Text>
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.iconButton}>
-          <FontAwesome name="check" size={24} color="green" onPress={handleComplete} />
+        {/* isCompleted değerine göre butonları devre dışı bırak */}
+        <TouchableOpacity 
+          style={styles.iconButton} 
+          disabled={isCompleted} 
+          onPress={handleComplete}>
+          <FontAwesome name="check" size={24} color={isCompleted ? "gray" : "green"} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <FontAwesome name="edit" size={24} color="yellow" />
+        <TouchableOpacity 
+          style={styles.iconButton} 
+          disabled={isCompleted}>
+          <FontAwesome name="edit" size={24} color={isCompleted ? "gray" : "yellow"} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton} onPress={handleDelete}>
-          <FontAwesome name="trash" size={24} color="red" />
+        <TouchableOpacity 
+          style={styles.iconButton} 
+          disabled={isCompleted} 
+          onPress={handleDelete}>
+          <FontAwesome name="trash" size={24} color={isCompleted ? "gray" : "red"} />
         </TouchableOpacity>
       </View>
     </View>
@@ -294,7 +305,6 @@ const styles = StyleSheet.create({
   },
 
   completedProductItem: {
-    // Apply opacity to make completed product items appear faded
     opacity: 0.4,
     width: 170,
     borderColor: '#B97AFF',
@@ -306,17 +316,16 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   completedProductName: {
-    // Use a lighter color for text in the completed product items
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 10,
-    color: 'gray', // Adjust text color
+    color: 'gray', 
   },
   completedProductLocation: {
     fontSize: 14,
     color: '#6700A9',
     marginTop: 5,
-    color: 'gray', // Adjust text color
+    color: 'gray',
   }
 });
 
