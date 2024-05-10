@@ -142,9 +142,9 @@ export default function New({ navigation }) {
     <TouchableWithoutFeedback disabled={loading} style={styles.container}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
         {loading && <ActivityIndicator style={styles.activityIndicator} size="large" color="#B97AFF" />}
-        <SelectionDrawer visible={modalVisible} onClose={() => { setModalVisible(false) }} options={[{ text: 'Camera', action: takePicture }, { text: 'Gallery', action: selectFromGallery }]} />
+        <SelectionDrawer visible={modalVisible} onClose={() => { setModalVisible(false) }} options={[{ text: 'Camera', action: takePicture }, { text: 'Gallery', action: selectFromGallery }]}/>
 
-        <View style={styles.photoContainer}>
+        <View style={[styles.photoContainer, { opacity: loading ? 0.4 : 1 }]}>
           <FlatList horizontal data={selectedPhotos} renderItem={({ item, index }) => (
             (item === 'addButton') ? (selectedPhotos.length >= 6) ? null : <SelectPhotoButton onPress={addPicture} /> : <SelectedPhoto onDelete={() => { removePicture(index) }} src={item} />
           )}
@@ -160,7 +160,7 @@ export default function New({ navigation }) {
         <InlineListPicker label='İl' items={cities} onSelect={handleCityPicker} renderItemLabel={(value, index) => value.il_adi} />
         <InlineListPicker label='İlçe' items={cities[selectedCityIndex].ilceler} onSelect={handleDistrictPicker} renderItemLabel={(value, index) => { print(value); return value.ilce_adi; }} />
 
-        <TouchableOpacity style={[styles.uploadButton, { opacity: loading ? 0.5 : 1 }]} onPress={handleUpload} disabled={loading}>
+        <TouchableOpacity style={[styles.uploadButton, { opacity: loading ? 0.4 : 1 }]} onPress={handleUpload} disabled={loading}>
           <Text style={styles.uploadButtonText}>Yükle</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -171,7 +171,7 @@ export default function New({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    position: 'relative', // Sayfa içinde mutlak konumlandırma yapmak için gerekli
+    position: 'relative', 
   },
   activityIndicator: {
     position: 'absolute',
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // İsteğe bağlı, yükleme işareti arka planınızı karartmak için
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
   },
   contentContainer: {
     padding: 20,
