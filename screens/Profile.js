@@ -81,7 +81,7 @@ function ProfileScreen({ navigation }) {
     //buralar scrollview olacak
      <View style={styles.container}> 
       <Text style={styles.hiheader}>Profilim</Text>
-      <Text style={styles.hiText}>Merhaba</Text>
+      <Text style={styles.hiText}>Merhaba {currentUser.displayName}</Text>
       <TouchableOpacity style={styles.exitContainer} onPress={() => firebaseAuth.signOut()}>
         <Text style={styles.exitText}>Çıkış yap</Text>
         <TouchableOpacity style={styles.exitButton} onPress={() => firebaseAuth.signOut()}>
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   hiheader: {
-    fontSize: 20,
+    fontSize: 23,
     fontWeight: 'bold',
     marginBottom: 10,
   },

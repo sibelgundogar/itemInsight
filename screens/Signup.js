@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Text, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, ActivityIndicator, Alert } from 'react-native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { firebaseAuth } from '../firebase';
 
 export default function SignUp({ navigation }) {
+    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleSignUp = async () => {
-        if (email === '' || password === '') {
+        if (username === '' || email === '' || password === '') {
             Alert.alert('Boş Alanlar', 'Lütfen email ve şifre alanlarını doldurunuz.');
             return;
         }
@@ -18,6 +19,7 @@ export default function SignUp({ navigation }) {
         const auth = firebaseAuth;
         try {
             const response = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(response.user, { displayName: username });
             console.log(response);
             navigation.replace('Home');
         } catch (error) {
@@ -29,14 +31,15 @@ export default function SignUp({ navigation }) {
                 console.log(error);
             }
         }
-    } 
+    }
 
     return (
         <KeyboardAvoidingView style={styles.container} behavior='height'>
             <Image source={require('../images/bg_2.jpg')} style={styles.backgroundImage} />
             <Text style={styles.headerText}>KAYIT OL</Text>
-            <TextInput style={styles.textinput} placeholder='E-mail' value={email} onChangeText={(text) => setEmail(text)}></TextInput>
-            <TextInput style={styles.textinput} placeholder='Şifre' value={password} onChangeText={(text) => setPassword(text)} secureTextEntry></TextInput>
+            <TextInput style={styles.textinput} placeholder='Kullanıcı Adı' value={username} onChangeText={(text) => setUsername(text)}/>
+            <TextInput style={styles.textinput} placeholder='E-mail' value={email} onChangeText={(text) => setEmail(text)}/>
+            <TextInput style={styles.textinput} placeholder='Şifre' value={password} onChangeText={(text) => setPassword(text)} secureTextEntry/>
 
             {loading ? (
                 <ActivityIndicator size="large" color="#0000ff" />

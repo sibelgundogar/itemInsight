@@ -20,7 +20,7 @@ export default function New({ navigation }) {
   const [desc, setDesc] = useState('');
   const [selectedCityIndex, setSelectedCityIndex] = useState(0);
   const [selectedDistrictIndex, setSelectedDistrictIndex] = useState(0);
-  const [loading, setLoading] = useState(false); // Yükleme durumu için state
+  const [loading, setLoading] = useState(false); 
   const db = getFirestore();
   const storage = getStorage();
   const { currentUser } = getAuth(); // Kullanıcıyı aldık
