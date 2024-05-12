@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { FontAwesome } from '@expo/vector-icons';
-import { firebaseAuth } from '../firebase';
+// import { firebaseAuth } from '../firebase';
 import { getFirestore, collection, getDocs, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
-
+import * as ImagePicker from 'expo-image-picker';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { updateProfile } from 'firebase/auth';
+import { firebaseAuth } from '../firebase';
 const Stack = createStackNavigator();
 
 export default function Profile() {
+
   return (
     <Stack.Navigator>
       <Stack.Screen name="Profil" component={ProfileScreen} options={{ headerShown: true, headerBackVisible: false }} />
@@ -20,6 +24,10 @@ function ProfileScreen({ navigation }) {
   const [userProducts, setUserProducts] = useState([]);
   const [completedProducts, setCompletedProducts] = useState([]);
   const currentUser = firebaseAuth.currentUser;
+  const [profilePhoto, setProfilePhoto] = useState(null); // Profil fotoğrafı state'i
+  const [loading, setLoading] = useState(false); // Yükleme durumu
+  const storage = getStorage();
+
 
   const fetchUserProducts = useCallback(async () => {
     try {
@@ -77,11 +85,106 @@ function ProfileScreen({ navigation }) {
     </TouchableOpacity>
   );
 
+
+  // Profil fotoğrafını seçme işlemi
+  const selectProfileImage = async () => {
+    try {
+      
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Kütüphane erişim izni reddedildi!');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+
+      if (!result.cancelled && result.assets.length > 0) {
+        // Eğer seçim işlemi iptal edilmediyse ve en az bir fotoğraf seçildiyse
+        // İlk fotoğrafın URI'sini alarak Firebase Storage'a yükle
+        const firstPhoto = result.assets[0];
+        uploadProfileImage(firstPhoto.uri);
+        console.log(firstPhoto.uri);
+      } else {
+        console.log('Fotoğraf seçilmedi veya seçim işlemi iptal edildi.');
+      }
+    } catch (error) {
+      console.error('Profil resmi seçilirken bir hata oluştu:', error);
+    }
+  };
+
+
+  // Profil fotoğrafını Firebase Storage'a yükleme işlemi
+ // Profil fotoğrafını Firebase Storage'a yükleme işlemi
+const uploadProfileImage = async (uri) => {
+  try {
+    const user = firebaseAuth.currentUser;
+    const fileName = `profile_images/${user.uid}`;
+    const storageRef = ref(storage, fileName);
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    await uploadBytes(storageRef, blob);
+    const downloadURL = await getDownloadURL(storageRef);
+    
+    // Firebase Authentication'da kullanıcının profil bilgilerini güncelle
+    await updateProfile(user, {
+      photoURL: downloadURL
+    });
+
+    // Profil fotoğrafı URI'sini state'e kaydet
+    setProfilePhoto(downloadURL);
+  } catch (error) {
+    console.error('Profil resmi yüklenirken bir hata oluştu:', error);
+    Alert.alert('Hata', 'Profil resmi yüklenirken bir hata oluştu.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+//kullanıcının fotosunu çekme 
+useEffect(() => {
+  // Kullanıcı giriş yaptığında
+  const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
+    if (user) {
+      // Kullanıcının Firebase Authentication'dan gelen profil fotoğrafı URL'sini kontrol et
+      const photoURL = user.photoURL;
+      if (photoURL) {
+        // Eğer profil fotoğrafı URL'si varsa, state'e kaydedilerek profil fotoğrafını güncelle
+        setProfilePhoto(photoURL);
+      }
+    }
+  });
+
+  // useEffect'in cleanup fonksiyonu
+  return () => unsubscribe();
+}, []);
   return (
     //buralar scrollview olacak
-     <View style={styles.container}> 
+    <View style={styles.container}>
       <Text style={styles.hiheader}>Profilim</Text>
-      <Text style={styles.hiText}>Merhaba {currentUser.displayName}</Text>
+
+      <TouchableOpacity onPress={selectProfileImage} disabled={loading}>
+        {loading ? (
+          <ActivityIndicator size="large" color="#B97AFF" />
+        ) : (
+          <View style={styles.profileImageContainer}>
+            {profilePhoto ? (
+              <Image source={{ uri: profilePhoto }} style={styles.profileImage} />
+            ) : (
+              <Text style={styles.profilePlaceholder}>Profil Fotoğrafı Ekle</Text>
+            )}
+          </View>
+        )}
+      </TouchableOpacity>
+
+      <Text style={styles.hiText}>Merhaba {firebaseAuth.currentUser.displayName}</Text>
+
+
       <TouchableOpacity style={styles.exitContainer} onPress={() => firebaseAuth.signOut()}>
         <Text style={styles.exitText}>Çıkış yap</Text>
         <TouchableOpacity style={styles.exitButton} onPress={() => firebaseAuth.signOut()}>
@@ -114,7 +217,7 @@ function ProfileScreen({ navigation }) {
 
 function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params;
-
+  
   const handleDelete = async () => {
     Alert.alert(
       'Ürünü Sil',
@@ -156,7 +259,7 @@ function ProductDetailScreen({ route, navigation }) {
       Alert.alert('Hata', 'Ürün güncellenirken bir hata oluştu.');
     }
   };
-  
+
   // Bu kontrol, ürün tamamlandıysa butonları devre dışı bırakır
   const isCompleted = product.isComplete;
 
@@ -175,20 +278,20 @@ function ProductDetailScreen({ route, navigation }) {
       <Text style={styles.productDetailDesc}>{product.description}</Text>
       <View style={styles.buttonContainer}>
         {/* isCompleted değerine göre butonları devre dışı bırak */}
-        <TouchableOpacity 
-          style={styles.iconButton} 
-          disabled={isCompleted} 
+        <TouchableOpacity
+          style={styles.iconButton}
+          disabled={isCompleted}
           onPress={handleComplete}>
           <FontAwesome name="check" size={24} color={isCompleted ? "gray" : "green"} />
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.iconButton} 
+        <TouchableOpacity
+          style={styles.iconButton}
           disabled={isCompleted}>
           <FontAwesome name="edit" size={24} color={isCompleted ? "gray" : "yellow"} />
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.iconButton} 
-          disabled={isCompleted} 
+        <TouchableOpacity
+          style={styles.iconButton}
+          disabled={isCompleted}
           onPress={handleDelete}>
           <FontAwesome name="trash" size={24} color={isCompleted ? "gray" : "red"} />
         </TouchableOpacity>
@@ -207,7 +310,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
-    marginTop:10
+    marginTop: 10
   },
   productItemContainer: {
     flex: 1,
@@ -221,7 +324,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     padding: 10,
-    marginBottom:5
+    marginBottom: 5
   },
   productImage: {
     width: '95%',
@@ -319,13 +422,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 10,
-    color: 'gray', 
+    color: 'gray',
   },
   completedProductLocation: {
     fontSize: 14,
     color: '#6700A9',
     marginTop: 5,
     color: 'gray',
-  }
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderColor: '#B97AFF',
+    borderWidth: 2
+  },
+  profileImageContainer: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+  },
+  profilePlaceholder: {
+    fontSize: 18,
+    color: 'gray',
+    textAlign: 'center',
+  },
 });
 
