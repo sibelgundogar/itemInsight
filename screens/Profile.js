@@ -89,7 +89,7 @@ function ProfileScreen({ navigation }) {
   // Profil fotoğrafını seçme işlemi
   const selectProfileImage = async () => {
     try {
-      
+
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Kütüphane erişim izni reddedildi!');
@@ -102,13 +102,14 @@ function ProfileScreen({ navigation }) {
         aspect: [1, 1],
         quality: 1,
       });
-
-      if (!result.cancelled && result.assets.length > 0) {
+      console.log('a');
+      if (!result.canceled && result.assets.length > 0) {
+        console.log('b');
         // Eğer seçim işlemi iptal edilmediyse ve en az bir fotoğraf seçildiyse
         // İlk fotoğrafın URI'sini alarak Firebase Storage'a yükle
         const firstPhoto = result.assets[0];
         uploadProfileImage(firstPhoto.uri);
-        console.log(firstPhoto.uri);
+        // console.log(firstPhoto.uri);
       } else {
         console.log('Fotoğraf seçilmedi veya seçim işlemi iptal edildi.');
       }
@@ -119,71 +120,73 @@ function ProfileScreen({ navigation }) {
 
 
   // Profil fotoğrafını Firebase Storage'a yükleme işlemi
- // Profil fotoğrafını Firebase Storage'a yükleme işlemi
-const uploadProfileImage = async (uri) => {
-  try {
-    const user = firebaseAuth.currentUser;
-    const fileName = `profile_images/${user.uid}`;
-    const storageRef = ref(storage, fileName);
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    await uploadBytes(storageRef, blob);
-    const downloadURL = await getDownloadURL(storageRef);
-    
-    // Firebase Authentication'da kullanıcının profil bilgilerini güncelle
-    await updateProfile(user, {
-      photoURL: downloadURL
+  // Profil fotoğrafını Firebase Storage'a yükleme işlemi
+  const uploadProfileImage = async (uri) => {
+    try {
+      console.log('c');
+      const user = firebaseAuth.currentUser;
+      const fileName = `profile_images/${user.uid}`;
+      const storageRef = ref(storage, fileName);
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      await uploadBytes(storageRef, blob);
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log('d');
+      // Firebase Authentication'da kullanıcının profil bilgilerini güncelle
+      await updateProfile(user, {
+        photoURL: downloadURL
+      });
+      console.log('e');
+      // Profil fotoğrafı URI'sini state'e kaydet
+      setProfilePhoto(downloadURL);
+      console.log('f');
+    } catch (error) {
+      console.error('Profil resmi yüklenirken bir hata oluştu:', error);
+      Alert.alert('Hata', 'Profil resmi yüklenirken bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  //kullanıcının fotosunu çekme
+  useEffect(() => {
+    // Kullanıcı giriş yaptığında
+    const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
+      if (user) {
+        // Kullanıcının Firebase Authentication'dan gelen profil fotoğrafı URL'sini kontrol et
+        const photoURL = user.photoURL;
+        if (photoURL) {
+          // Eğer profil fotoğrafı URL'si varsa, state'e kaydedilerek profil fotoğrafını güncelle
+          setProfilePhoto(photoURL);
+        }
+      }
     });
 
-    // Profil fotoğrafı URI'sini state'e kaydet
-    setProfilePhoto(downloadURL);
-  } catch (error) {
-    console.error('Profil resmi yüklenirken bir hata oluştu:', error);
-    Alert.alert('Hata', 'Profil resmi yüklenirken bir hata oluştu.');
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-//kullanıcının fotosunu çekme 
-useEffect(() => {
-  // Kullanıcı giriş yaptığında
-  const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
-    if (user) {
-      // Kullanıcının Firebase Authentication'dan gelen profil fotoğrafı URL'sini kontrol et
-      const photoURL = user.photoURL;
-      if (photoURL) {
-        // Eğer profil fotoğrafı URL'si varsa, state'e kaydedilerek profil fotoğrafını güncelle
-        setProfilePhoto(photoURL);
-      }
-    }
-  });
-
-  // useEffect'in cleanup fonksiyonu
-  return () => unsubscribe();
-}, []);
+    // useEffect'in cleanup fonksiyonu
+    return () => unsubscribe();
+  }, []);
   return (
     //buralar scrollview olacak
     <View style={styles.container}>
       <Text style={styles.hiheader}>Profilim</Text>
+      <View style={styles.profileContainer}>
+        <TouchableOpacity onPress={selectProfileImage} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator size="large" color="#B97AFF" />
+          ) : (
+            <View style={styles.profileImageContainer}>
+              {profilePhoto ? (
+                <Image source={{ uri: profilePhoto }} style={styles.profileImage} />
+              ) : (
+                <Text style={styles.profilePlaceholder}>Profil Fotoğrafı Ekle</Text>
+              )}
+            </View>
+          )}
+        </TouchableOpacity>
 
-      <TouchableOpacity onPress={selectProfileImage} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator size="large" color="#B97AFF" />
-        ) : (
-          <View style={styles.profileImageContainer}>
-            {profilePhoto ? (
-              <Image source={{ uri: profilePhoto }} style={styles.profileImage} />
-            ) : (
-              <Text style={styles.profilePlaceholder}>Profil Fotoğrafı Ekle</Text>
-            )}
-          </View>
-        )}
-      </TouchableOpacity>
-
-      <Text style={styles.hiText}>Merhaba {firebaseAuth.currentUser.displayName}</Text>
-
+        <Text style={styles.hiText}>Merhaba {firebaseAuth.currentUser.displayName}</Text>
+      </View>
 
       <TouchableOpacity style={styles.exitContainer} onPress={() => firebaseAuth.signOut()}>
         <Text style={styles.exitText}>Çıkış yap</Text>
@@ -217,7 +220,7 @@ useEffect(() => {
 
 function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params;
-  
+
   const handleDelete = async () => {
     Alert.alert(
       'Ürünü Sil',
@@ -383,10 +386,10 @@ const styles = StyleSheet.create({
   exitContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 50,
+    marginTop: -10,
     marginLeft: 250,
     marginRight: 10,
-    marginBottom: 50,
+    marginBottom: 20,
   },
   exitText: {
     fontSize: 17,
@@ -400,6 +403,9 @@ const styles = StyleSheet.create({
   },
   hiText: {
     fontSize: 20,
+    marginLeft:20,
+    fontWeight: 'bold',
+    color:'gray'
   },
   hiheader: {
     fontSize: 23,
@@ -431,29 +437,33 @@ const styles = StyleSheet.create({
     color: 'gray',
   },
   profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 130,
+    height: 130,
+    borderRadius: 75,
     borderColor: '#B97AFF',
-    borderWidth: 2
+    borderWidth: 2,
   },
   profileImageContainer: {
-    width: 150,
-    height: 150,
+    width: 130,
+    height: 130,
     borderRadius: 75,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#D3D3D3',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  profileImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+    borderColor: '#B97AFF',
+    borderWidth: 2,
+    
   },
   profilePlaceholder: {
     fontSize: 18,
-    color: 'gray',
+    color: 'black',
     textAlign: 'center',
+    margin:5
   },
+  profileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  
 });
 
