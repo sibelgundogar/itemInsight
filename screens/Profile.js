@@ -127,7 +127,7 @@ function ProfileScreen({ navigation }) {
   // Profil fotoğrafını Firebase Storage'a yükleme işlemi
   const uploadProfileImage = async (uri) => {
     try {
-      setLoading(true);
+      setLoading(true);   
       const user = firebaseAuth.currentUser;
       const fileName = `profile_images/${user.uid}`;
       const fileRef = ref(storage, fileName);
@@ -161,16 +161,16 @@ function ProfileScreen({ navigation }) {
           }
         }
       });
-
+  
       return () => unsubscribe();
     } catch (error) {
       console.error('Kullanıcı giriş durumu izlenirken bir hata oluştu:', error);
     }
   }, []);
-
+  
   return (
     //buralar scrollview olacak
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <Text style={styles.hiheader}>Profilim</Text>
       <View style={styles.profileContainer}>
         <TouchableOpacity onPress={selectProfileImage} disabled={loading}>
@@ -203,7 +203,7 @@ function ProfileScreen({ navigation }) {
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
-        extraData={userProducts}
+        extraData={userProducts} 
       />
 
       <Text style={styles.header}>Tamamlanan İlanlar</Text>
@@ -212,11 +212,11 @@ function ProfileScreen({ navigation }) {
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
-        extraData={completedProducts}
+        extraData={completedProducts} 
       />
 
 
-    </View>
+    </ScrollView> 
     //buralar scrollview
   );
 }
@@ -267,7 +267,6 @@ function ProductDetailScreen({ route, navigation }) {
 
   // Bu kontrol, ürün tamamlandıysa butonları devre dışı bırakır
   const isCompleted = product.isComplete;
-  console.log(isCompleted);
   return (
     <View style={styles.container}>
       <FlatList
@@ -296,7 +295,7 @@ function ProductDetailScreen({ route, navigation }) {
         <TouchableOpacity
           style={styles.iconButton}
           onPress={handleDelete}>
-          <FontAwesome name="trash" size={24} color="red" />
+          <FontAwesome name="trash" size={24} color= "red" />
         </TouchableOpacity>
       </View>
     </View>
@@ -403,9 +402,9 @@ const styles = StyleSheet.create({
   },
   hiText: {
     fontSize: 20,
-    marginLeft: 20,
+    marginLeft:20,
     fontWeight: 'bold',
-    color: 'gray'
+    color:'gray'
   },
   hiheader: {
     fontSize: 23,
@@ -452,18 +451,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderColor: '#B97AFF',
     borderWidth: 2,
-
+    
   },
   profilePlaceholder: {
     fontSize: 18,
     color: 'black',
     textAlign: 'center',
-    margin: 5
+    margin:5
   },
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-
+  
 });
 

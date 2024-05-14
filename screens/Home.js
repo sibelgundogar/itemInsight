@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity } from 'react-native';
 import { SearchBar } from 'react-native-elements';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -77,11 +77,11 @@ function Navbar() {
   );
 }
 
-//ana sayfanın kodları
+// Ana sayfanın kodları
 function HomeScreen({ navigation }) {
   const [items, setItems] = useState([]);
   const [refreshing, setRefreshing] = useState(false); // Yenileme durumunu izlemek için state
-
+  const [searchText, setSearchText] = useState('');
 
   const db = getFirestore();
   // Verilerin yenilenmesini sağlayacak işlev
@@ -92,7 +92,7 @@ function HomeScreen({ navigation }) {
       const itemsData = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        if (!data.isComplete) { // Sadece isComplete değeri false olan ürünler ekleniyor
+        if (!data.isComplete && data.title.toLowerCase().includes(searchText.toLowerCase())) { // Sadece isComplete değeri false olan ve arama metnini içeren ürünler ekleniyor
           itemsData.push({
             id: doc.id,
             title: data.title,
@@ -112,9 +112,7 @@ function HomeScreen({ navigation }) {
   };
   useEffect(() => {
     refreshItems(); // Sayfa yüklendiğinde verileri ilk kez getir
-  }, []);
-
-  
+  }, [searchText]);
 
   // Her bir ürünü render ediyor
   const renderItem = ({ item }) => (
@@ -126,16 +124,15 @@ function HomeScreen({ navigation }) {
       </View>
     </TouchableOpacity>
   );
-  
 
   // Ana sayfanın tasarımı search bar ve ürünlerin flat listi return ediliyor
   return (
     <View style={styles.container}>
-      <SearchBar style={styles.searchbar} placeholder="Bul..." lightTheme />
+      <SearchBar style={styles.searchbar} placeholder="Bul..." lightTheme onChangeText={(text) => setSearchText(text)} value={searchText} />
       <FlatList data={items} renderItem={renderItem} keyExtractor={(item) => item.id.toString()} numColumns={2}
-      refreshing={refreshing} // FlatList'in yenileme durumunu göstermesi için refreshing prop'unu ayarla
-      onRefresh={refreshItems} // FlatList yenileme işlevini belirle
-       />
+        refreshing={refreshing} // FlatList'in yenileme durumunu göstermesi için refreshing prop'unu ayarla
+        onRefresh={refreshItems} // FlatList yenileme işlevini belirle
+      />
     </View>
   );
 }
@@ -149,7 +146,6 @@ function ItemDetailScreen({ route }) {
   const renderItem = ({ item }) => (
     <Image source={{ uri: item }} style={styles.itemDetailImage} resizeMode="cover" />
   );
-  
 
   return (
     <View style={styles.photoContainer}>
@@ -170,7 +166,6 @@ function ItemDetailScreen({ route }) {
   );
 }
 
-
 //Ana sayfa ve Ürün detay sayfası arasında stack screen oluşturan fonksiyon
 function HomeWrapper() {
   return (
@@ -180,8 +175,6 @@ function HomeWrapper() {
     </Stack.Navigator>
   )
 }
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -228,7 +221,7 @@ const styles = StyleSheet.create({
     height: 370,
     borderRadius: 5,
     marginBottom: 15,
-    marginHorizontal:10
+    marginHorizontal: 10
   },
   itemDetailName: {
     marginLeft: 20,
@@ -260,7 +253,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
   },
-  photoContainer:{
-    marginVertical:20,
+  photoContainer: {
+    marginVertical: 20,
   }
 });
