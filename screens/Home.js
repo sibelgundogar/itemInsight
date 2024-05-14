@@ -120,12 +120,13 @@ function HomeScreen({ navigation }) {
   const renderItem = ({ item }) => (
     <TouchableOpacity style={styles.itemItemContainer} onPress={() => navigation.navigate('Ürün Detayı', { items: item })}>
       <View style={styles.itemItem}>
-        <Image source={{ uri: item.photos[0] }} style={styles.itemImage} resizeMode="cover" />
+        {item.photos && item.photos.length > 0 && <Image source={{ uri: item.photos[0] }} style={styles.itemImage} resizeMode="cover" />}
         <Text style={styles.itemName}>{item.title}</Text>
         <Text style={styles.itemLocation}>{item.city}, {item.district}</Text>
       </View>
     </TouchableOpacity>
   );
+  
 
   // Ana sayfanın tasarımı search bar ve ürünlerin flat listi return ediliyor
   return (

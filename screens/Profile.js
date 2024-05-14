@@ -45,7 +45,8 @@ function ProfileScreen({ navigation }) {
             description: data.description,
             city: data.city,
             district: data.district,
-            photos: data.photos
+            photos: data.photos,
+            isComplete: data.isComplete
           });
         } else {
           productsData.push({
@@ -54,7 +55,8 @@ function ProfileScreen({ navigation }) {
             description: data.description,
             city: data.city,
             district: data.district,
-            photos: data.photos
+            photos: data.photos,
+            isComplete: data.isComplete
           });
         }
       });
@@ -89,7 +91,7 @@ function ProfileScreen({ navigation }) {
   // Profil fotoğrafını seçme işlemi
   const selectProfileImage = async () => {
     try {
-
+      setLoading(true);
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Kütüphane erişim izni reddedildi!');
@@ -112,34 +114,34 @@ function ProfileScreen({ navigation }) {
         // console.log(firstPhoto.uri);
       } else {
         console.log('Fotoğraf seçilmedi veya seçim işlemi iptal edildi.');
+        Alert.alert('Hata', 'Profil resmi seçilirken bir hata oluştu.');
       }
     } catch (error) {
       console.error('Profil resmi seçilirken bir hata oluştu:', error);
+    } finally {
+      setLoading(false); // Yükleme durumunu kapat
     }
   };
 
 
   // Profil fotoğrafını Firebase Storage'a yükleme işlemi
-  // Profil fotoğrafını Firebase Storage'a yükleme işlemi
   const uploadProfileImage = async (uri) => {
     try {
-      console.log('c');
+      setLoading(true);
       const user = firebaseAuth.currentUser;
       const fileName = `profile_images/${user.uid}`;
-      const storageRef = ref(storage, fileName);
+      const fileRef = ref(storage, fileName);
       const response = await fetch(uri);
       const blob = await response.blob();
-      await uploadBytes(storageRef, blob);
-      const downloadURL = await getDownloadURL(storageRef);
-      console.log('d');
-      // Firebase Authentication'da kullanıcının profil bilgilerini güncelle
+      console.log('gd');
+      await uploadBytes(fileRef, blob); //burada sorun
+      const downloadURL = await getDownloadURL(fileRef);
+      setProfilePhoto(downloadURL);
       await updateProfile(user, {
         photoURL: downloadURL
       });
-      console.log('e');
-      // Profil fotoğrafı URI'sini state'e kaydet
-      setProfilePhoto(downloadURL);
-      console.log('f');
+      setLoading(false); // Ekledim: Yükleme işlemi tamamlandığında loading state'ini false yap
+      console.log('Profil fotoğrafı başarıyla yüklendi. URL:', downloadURL); // Ekledim: Başarıyla yüklendiğinde konsola URL'yi yazdır  
     } catch (error) {
       console.error('Profil resmi yüklenirken bir hata oluştu:', error);
       Alert.alert('Hata', 'Profil resmi yüklenirken bir hata oluştu.');
@@ -149,23 +151,23 @@ function ProfileScreen({ navigation }) {
   };
 
 
-  //kullanıcının fotosunu çekme
   useEffect(() => {
-    // Kullanıcı giriş yaptığında
-    const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
-      if (user) {
-        // Kullanıcının Firebase Authentication'dan gelen profil fotoğrafı URL'sini kontrol et
-        const photoURL = user.photoURL;
-        if (photoURL) {
-          // Eğer profil fotoğrafı URL'si varsa, state'e kaydedilerek profil fotoğrafını güncelle
-          setProfilePhoto(photoURL);
+    try {
+      const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
+        if (user) {
+          const photoURL = user.photoURL;
+          if (photoURL) {
+            setProfilePhoto(photoURL);
+          }
         }
-      }
-    });
+      });
 
-    // useEffect'in cleanup fonksiyonu
-    return () => unsubscribe();
+      return () => unsubscribe();
+    } catch (error) {
+      console.error('Kullanıcı giriş durumu izlenirken bir hata oluştu:', error);
+    }
   }, []);
+
   return (
     //buralar scrollview olacak
     <View style={styles.container}>
@@ -201,7 +203,7 @@ function ProfileScreen({ navigation }) {
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
-        extraData={userProducts} // Added extraData to force re-render when userProducts change
+        extraData={userProducts}
       />
 
       <Text style={styles.header}>Tamamlanan İlanlar</Text>
@@ -210,17 +212,17 @@ function ProfileScreen({ navigation }) {
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
-        extraData={completedProducts} // Added extraData to force re-render when completedProducts change
+        extraData={completedProducts}
       />
 
 
-    </View> //buralar scrollview
+    </View>
+    //buralar scrollview
   );
 }
 
 function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params;
-
   const handleDelete = async () => {
     Alert.alert(
       'Ürünü Sil',
@@ -265,7 +267,7 @@ function ProductDetailScreen({ route, navigation }) {
 
   // Bu kontrol, ürün tamamlandıysa butonları devre dışı bırakır
   const isCompleted = product.isComplete;
-
+  console.log(isCompleted);
   return (
     <View style={styles.container}>
       <FlatList
@@ -280,7 +282,6 @@ function ProductDetailScreen({ route, navigation }) {
       <Text style={styles.productDetailLocation}>{product.city}, {product.district}</Text>
       <Text style={styles.productDetailDesc}>{product.description}</Text>
       <View style={styles.buttonContainer}>
-        {/* isCompleted değerine göre butonları devre dışı bırak */}
         <TouchableOpacity
           style={styles.iconButton}
           disabled={isCompleted}
@@ -294,9 +295,8 @@ function ProductDetailScreen({ route, navigation }) {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.iconButton}
-          disabled={isCompleted}
           onPress={handleDelete}>
-          <FontAwesome name="trash" size={24} color={isCompleted ? "gray" : "red"} />
+          <FontAwesome name="trash" size={24} color="red" />
         </TouchableOpacity>
       </View>
     </View>
@@ -403,9 +403,9 @@ const styles = StyleSheet.create({
   },
   hiText: {
     fontSize: 20,
-    marginLeft:20,
+    marginLeft: 20,
     fontWeight: 'bold',
-    color:'gray'
+    color: 'gray'
   },
   hiheader: {
     fontSize: 23,
@@ -452,18 +452,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderColor: '#B97AFF',
     borderWidth: 2,
-    
+
   },
   profilePlaceholder: {
     fontSize: 18,
     color: 'black',
     textAlign: 'center',
-    margin:5
+    margin: 5
   },
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  
+
 });
 
