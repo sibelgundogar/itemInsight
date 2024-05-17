@@ -1,11 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity,ScrollView, Dimensions  } from 'react-native';
 import { SearchBar } from 'react-native-elements';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import cities from '../data/cities';
+import { getFirestore, collection, getDocs, query, orderBy,serverTimestamp  } from 'firebase/firestore';
 
 import Messages from './Messages';
 import New from './New';
@@ -88,7 +88,8 @@ function HomeScreen({ navigation }) {
   const refreshItems = async () => {
     setRefreshing(true); // Yenileme başladığında refreshing state'ini true olarak ayarla
     try {
-      const querySnapshot = await getDocs(collection(db, 'items'));
+      const q = query(collection(db, 'items'), orderBy('timestamp', 'desc')); // Verileri timestamp alanına göre azalan sırayla getir
+      const querySnapshot = await getDocs(q);
       const itemsData = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -99,7 +100,8 @@ function HomeScreen({ navigation }) {
             description: data.description,
             city: data.city,
             district: data.district,
-            photos: data.photos
+            photos: data.photos,
+            timestamp: data.timestamp,
           });
         }
       });
@@ -141,21 +143,49 @@ function HomeScreen({ navigation }) {
 function ItemDetailScreen({ route }) {
   const { items } = route.params;
   const photos = items && items.photos ? items.photos : [];
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  // Tüm resimleri göstermek için renderItem fonksiyonu güncelleniyor
-  const renderItem = ({ item }) => (
-    <Image source={{ uri: item }} style={styles.itemDetailImage} resizeMode="cover" />
-  );
+  const handleScroll = (event) => {
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const viewSize = event.nativeEvent.layoutMeasurement.width;
+    const index = Math.floor(contentOffsetX / viewSize);
+    setActiveIndex(index);
+};
+
+  // // Tüm resimleri göstermek için renderItem fonksiyonu güncelleniyor
+  // const renderItem = ({ item }) => (
+  //   <Image source={{ uri: item }} style={styles.itemDetailImage} resizeMode="cover" />
+  // );
 
   return (
     <View style={styles.photoContainer}>
-      <FlatList
+      {/* <FlatList
         horizontal
         data={photos}
         keyExtractor={(photo, index) => index.toString()}
         renderItem={renderItem}
-      />
-      {/* <Image source={{ uri: items.photos[0] }} style={styles.itemImage} resizeMode="cover" /> */}
+      /> */}
+      <ScrollView
+        horizontal
+        pagingEnabled // Ekran boyutunda sayfa geçişi için pagingEnabled ekliyoruz
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        {photos.map((photo, index) => (
+          <Image
+            key={index}
+            source={{ uri: photo }}
+            style={{ ...styles.itemDetailImage}} 
+            resizeMode="cover"
+          />
+        ))}
+      </ScrollView>
+      <View style={styles.paginationContainer}>
+        {photos.map((_, index) => (
+          <View key={index} style={[styles.dot, { opacity: index === activeIndex ? 1 : 0.3 }]} />
+        ))}
+      </View>
       <Text style={styles.itemDetailName}>{items.title}</Text>
       <Text style={styles.itemDetailLocation}>{items.city}, {items.district}</Text>
       <Text style={styles.itemDetailDesc}>{items.description}</Text>
@@ -255,5 +285,20 @@ const styles = StyleSheet.create({
   },
   photoContainer: {
     marginVertical: 20,
-  }
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10, 
+    marginBottom: 20,
+  },
+  dot: {
+    height: 10,
+    width: 10,
+    borderRadius: 5,
+    backgroundColor: '#B97AFF',
+    marginHorizontal: 5,
+  },
 });
+
+

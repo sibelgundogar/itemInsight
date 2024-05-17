@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { FontAwesome } from '@expo/vector-icons';
-// import { firebaseAuth } from '../firebase';
 import { getFirestore, collection, getDocs, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -79,10 +78,10 @@ function ProfileScreen({ navigation }) {
     <TouchableOpacity
       style={styles.productItemContainer}
       onPress={() => navigation.navigate('Ürün Detayı', { product: item })}>
-      <View style={completedProducts.includes(item) ? styles.completedProductItem : styles.productItem}>
+      <View style={item.isComplete ? styles.completedProductItem : styles.productItem}>
         <Image source={{ uri: item.photos[0] }} style={styles.productImage} resizeMode="cover" />
-        <Text style={completedProducts.includes(item) ? styles.completedProductName : styles.productName}>{item.title}</Text>
-        <Text style={completedProducts.includes(item) ? styles.completedProductLocation : styles.productLocation}>{item.city}, {item.district}</Text>
+        <Text style={styles.productName} >{item.title}</Text>
+        <Text style={styles.productLocation}>{item.city}, {item.district}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -127,7 +126,7 @@ function ProfileScreen({ navigation }) {
   // Profil fotoğrafını Firebase Storage'a yükleme işlemi
   const uploadProfileImage = async (uri) => {
     try {
-      setLoading(true);   
+      setLoading(true);
       const user = firebaseAuth.currentUser;
       const fileName = `profile_images/${user.uid}`;
       const fileRef = ref(storage, fileName);
@@ -161,16 +160,16 @@ function ProfileScreen({ navigation }) {
           }
         }
       });
-  
+
       return () => unsubscribe();
     } catch (error) {
       console.error('Kullanıcı giriş durumu izlenirken bir hata oluştu:', error);
     }
   }, []);
-  
-  return (
-    //buralar scrollview olacak
-    <ScrollView style={styles.container}>
+
+ 
+  const renderHeader = () => (
+    <>
       <Text style={styles.hiheader}>Profilim</Text>
       <View style={styles.profileContainer}>
         <TouchableOpacity onPress={selectProfileImage} disabled={loading}>
@@ -186,26 +185,20 @@ function ProfileScreen({ navigation }) {
             </View>
           )}
         </TouchableOpacity>
-
         <Text style={styles.hiText}>Merhaba {firebaseAuth.currentUser.displayName}</Text>
       </View>
-
       <TouchableOpacity style={styles.exitContainer} onPress={() => firebaseAuth.signOut()}>
         <Text style={styles.exitText}>Çıkış yap</Text>
         <TouchableOpacity style={styles.exitButton} onPress={() => firebaseAuth.signOut()}>
           <FontAwesome name="sign-out" size={24} color="red" />
         </TouchableOpacity>
       </TouchableOpacity>
+      <Text style={styles.header}>Yüklenen İlanlar</Text>
+    </>
+  );
 
-      <Text style={styles.header}>Yüklediğim İlanlar</Text>
-      <FlatList
-        data={userProducts}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
-        extraData={userProducts} 
-      />
-
+  const renderCompleted = () => (
+    <>
       <Text style={styles.header}>Tamamlanan İlanlar</Text>
       <FlatList
         data={completedProducts}
@@ -214,12 +207,23 @@ function ProfileScreen({ navigation }) {
         numColumns={2}
         extraData={completedProducts} 
       />
+    </>
+  );
 
-
-    </ScrollView> 
-    //buralar scrollview
+  return (
+    <FlatList
+      ListHeaderComponent={renderHeader}
+      ListFooterComponent={renderCompleted}
+      data={userProducts}
+      renderItem={renderItem}
+      keyExtractor={(item) => item.id.toString()}
+      numColumns={2}
+      contentContainerStyle={styles.container}
+    />
   );
 }
+    //buralar scrollview
+
 
 function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params;
@@ -295,7 +299,7 @@ function ProductDetailScreen({ route, navigation }) {
         <TouchableOpacity
           style={styles.iconButton}
           onPress={handleDelete}>
-          <FontAwesome name="trash" size={24} color= "red" />
+          <FontAwesome name="trash" size={24} color="red" />
         </TouchableOpacity>
       </View>
     </View>
@@ -305,7 +309,7 @@ function ProductDetailScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    // flex: 1,
     padding: 10,
   },
   header: {
@@ -348,7 +352,7 @@ const styles = StyleSheet.create({
     width: 370,
     height: 370,
     borderRadius: 5,
-    marginBottom: 15,
+    marginVertical: 15,
   },
   productDetailName: {
     marginLeft: 20,
@@ -402,9 +406,9 @@ const styles = StyleSheet.create({
   },
   hiText: {
     fontSize: 20,
-    marginLeft:20,
+    marginLeft: 20,
     fontWeight: 'bold',
-    color:'gray'
+    color: 'gray'
   },
   hiheader: {
     fontSize: 23,
@@ -413,7 +417,7 @@ const styles = StyleSheet.create({
   },
 
   completedProductItem: {
-    opacity: 0.4,
+    opacity: 0.3,
     width: 170,
     borderColor: '#B97AFF',
     borderWidth: 2,
@@ -422,18 +426,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     marginBottom: 5,
-  },
-  completedProductName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 10,
-    color: 'gray',
-  },
-  completedProductLocation: {
-    fontSize: 14,
-    color: '#6700A9',
-    marginTop: 5,
-    color: 'gray',
   },
   profileImage: {
     width: 130,
@@ -451,18 +443,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderColor: '#B97AFF',
     borderWidth: 2,
-    
+
   },
   profilePlaceholder: {
     fontSize: 18,
     color: 'black',
     textAlign: 'center',
-    margin:5
+    margin: 5
   },
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  
+
 });
 

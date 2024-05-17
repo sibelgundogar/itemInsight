@@ -7,9 +7,9 @@ import { launchCameraAsync, launchImageLibraryAsync, MediaTypeOptions, CameraTyp
 import cities from '../data/cities';
 import InlineListPicker from '../components/InlineListPicker';
 import { Camera } from 'expo-camera';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import firestore from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL  } from 'firebase/storage';
 import { useNavigation } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
 
@@ -121,7 +121,8 @@ export default function New({ navigation }) {
         description: desc,
         city: cities[selectedCityIndex].il_adi,
         district: cities[selectedCityIndex].ilceler[selectedDistrictIndex].ilce_adi,
-        photos: photoURLs
+        photos: photoURLs,
+        timestamp: serverTimestamp()
 
       };
 
