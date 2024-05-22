@@ -1,20 +1,34 @@
 import React from 'react';
 import { View, StyleSheet, Text, Image, TouchableOpacity, TextInput } from 'react-native';
-// import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { FontAwesome } from '@expo/vector-icons';
+import { onSnapshot, collection, getFirestore } from 'firebase/firestore';
 
 
 // useEffect kullan
 // onsnapshot ile yeni mesaj gelince tetikleme kısmını yaparız
 // 
 
+const db = getFirestore();
 
-// const Tab = createMaterialTopTabNavigator();
+const Tab = createMaterialTopTabNavigator();
 const Stack = createStackNavigator();
 
 //Mesajlar ve mesaj detayı sayfasının stack navigatoru
 export default function Messages() {
+  useEffect(() => {
+    console.log("Subsribed")
+    const unsubscribe = onSnapshot(collection(db, "messages"), (snapshot) => {
+      const source = snapshot.metadata.hasPendingWrites ? "Local" : "Server";
+      console.log(source, snapshot.data())
+    })
+    return () => {
+      console.log("Unsubsribed")
+      unsubscribe()
+    }
+  }, [])
+
   return (
     <Stack.Navigator>
       <Stack.Screen name="Messages" component={Tabs} options={{ headerShown: true, title: "Mesajlar" }} />
@@ -27,10 +41,10 @@ export default function Messages() {
 function Tabs() {
   return (
     // Tab.Navigator
-    <Stack.Navigator> 
-      <Stack.Screen name="Gelen Mesajlar" component={Inbox} />
-      <Stack.Screen name="Gönderilen Mesajlar" component={Sent} />
-    </Stack.Navigator>
+    <Tab.Navigator>
+      <Tab.Screen name="Gelen Mesajlar" component={Inbox} />
+      <Tab.Screen name="Gönderilen Mesajlar" component={Sent} />
+    </Tab.Navigator>
   );
 }
 

@@ -8,6 +8,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { firebaseAuth } from '../firebase';
 import ItemDetail from '../components/ItemDetail'
+import ItemForm from '../components/ItemForm' 
 const Stack = createStackNavigator();
 
 export default function Profile() {

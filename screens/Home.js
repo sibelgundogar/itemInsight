@@ -101,7 +101,7 @@ const refreshItems = async () => {
       const titleMatches = data.title.toLowerCase().includes(searchText.toLowerCase());
       const descriptionMatches = data.description.toLowerCase().includes(searchText.toLowerCase());
       const cityMatches = searchCity ? data.city.toLowerCase().includes(searchCity.toLowerCase()) : true;
-      if (!data.isComplete && titleMatches || descriptionMatches || cityMatches) {
+      if (!data.isComplete && (titleMatches || descriptionMatches || cityMatches)) {
         itemsData.push({
           id: doc.id,
           title: data.title,
