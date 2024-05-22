@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { firebaseAuth } from '../firebase';
+import ItemDetail from '../components/ItemDetail'
 const Stack = createStackNavigator();
 
 export default function Profile() {
@@ -33,8 +34,8 @@ function ProfileScreen({ navigation }) {
       const db = getFirestore();
       const q = query(collection(db, 'items'), where('userId', '==', currentUser.uid));
       const querySnapshot = await getDocs(q);
-      const productsData = [];
-      const completedProductsData = [];
+      let productsData = [];
+      let completedProductsData = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
         if (data.isComplete) {
@@ -45,7 +46,8 @@ function ProfileScreen({ navigation }) {
             city: data.city,
             district: data.district,
             photos: data.photos,
-            isComplete: data.isComplete
+            isComplete: data.isComplete,
+            timestamp: data.timestamp 
           });
         } else {
           productsData.push({
@@ -55,10 +57,14 @@ function ProfileScreen({ navigation }) {
             city: data.city,
             district: data.district,
             photos: data.photos,
-            isComplete: data.isComplete
+            isComplete: data.isComplete,
+            timestamp: data.timestamp 
           });
         }
       });
+      productsData = productsData.sort((a, b) => b.timestamp - a.timestamp);
+      completedProductsData = completedProductsData.sort((a, b) => b.timestamp - a.timestamp);
+
       setUserProducts(productsData);
       setCompletedProducts(completedProductsData);
     } catch (error) {
@@ -70,7 +76,6 @@ function ProfileScreen({ navigation }) {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchUserProducts();
     });
-
     return unsubscribe;
   }, [navigation, fetchUserProducts]);
 
@@ -109,7 +114,7 @@ function ProfileScreen({ navigation }) {
         const firstPhoto = result.assets[0];
         uploadProfileImage(firstPhoto.uri);
       } else {
-        Alert.alert('Hata', 'Profil resmi seçilirken bir hata oluştu.');
+        // Alert.alert('Hata', 'Profil resmi seçilirken bir hata oluştu.');
       }
     } catch (error) {
       console.error('Profil resmi seçilirken bir hata oluştu:', error);
@@ -287,7 +292,7 @@ function ProductDetailScreen({ route, navigation }) {
       /> */}
       <ScrollView
         horizontal
-        pagingEnabled // Ekran boyutunda sayfa geçişi için pagingEnabled ekliyoruz
+        pagingEnabled // Ekran boyutunda sayfa geçişi için pagingEnabled 
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}

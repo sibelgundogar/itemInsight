@@ -6,6 +6,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import SearchModal from '../components/SearchModal';
+import ItemDetail from '../components/ItemDetail'
 
 import Messages from './Messages';
 import New from './New';
