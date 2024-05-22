@@ -5,7 +5,7 @@ import { SearchBar } from 'react-native-elements';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { getFirestore, collection, getDocs, query, orderBy,serverTimestamp  } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
 
 import Messages from './Messages';
 import New from './New';
@@ -85,33 +85,33 @@ function HomeScreen({ navigation }) {
 
   const db = getFirestore();
   // Verilerin yenilenmesini sağlayacak işlev
-  const refreshItems = async () => {
-    setRefreshing(true); // Yenileme başladığında refreshing state'ini true olarak ayarla
-    try {
-      const q = query(collection(db, 'items'), orderBy('timestamp', 'desc')); // Verileri timestamp alanına göre azalan sırayla getir
-      const querySnapshot = await getDocs(q);
-      const itemsData = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (!data.isComplete && data.title.toLowerCase().includes(searchText.toLowerCase())) { // Sadece isComplete değeri false olan ve arama metnini içeren ürünler ekleniyor
-          itemsData.push({
-            id: doc.id,
-            title: data.title,
-            description: data.description,
-            city: data.city,
-            district: data.district,
-            photos: data.photos,
-            timestamp: data.timestamp,
-          });
-        }
-      });
-      setItems(itemsData);
-    } catch (error) {
-      console.error('Verileri alırken bir hata oluştu:', error);
-    } finally {
-      setRefreshing(false); // Yenileme tamamlandığında refreshing state'ini false olarak ayarla
-    }
-  };
+ const refreshItems = async () => {
+  setRefreshing(true); // Yenileme başladığında refreshing state'ini true olarak ayarla
+  try {
+    const q = query(collection(db, 'items'), orderBy('timestamp', 'desc')); // Verileri timestamp alanına göre azalan sırayla getir
+    const querySnapshot = await getDocs(q);
+    const itemsData = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (!data.isComplete && data.title.toLowerCase().includes(searchText.toLowerCase())) { // Sadece isComplete değeri false olan ve arama metnini içeren ürünler ekleniyor
+        itemsData.push({
+          id: doc.id,
+          title: data.title,
+          description: data.description,
+          city: data.city,
+          district: data.district,
+          photos: data.photos,
+          timestamp: data.timestamp,
+        });
+      }
+    });
+    setItems(itemsData);
+  } catch (error) {
+    console.error('Verileri alırken bir hata oluştu:', error);
+  } finally {
+    setRefreshing(false); // Yenileme tamamlandığında refreshing state'ini false olarak ayarla
+  }
+};
   useEffect(() => {
     refreshItems(); // Sayfa yüklendiğinde verileri ilk kez getir
   }, [searchText]);
