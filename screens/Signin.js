@@ -21,11 +21,11 @@ export default function SignIn({ navigation }) {
     setLoading(true);
     try {
       const response = await signInWithEmailAndPassword(auth, email, password);
-      console.log(response);
+      // console.log(response);
     } catch (error) {
       setLoading(false);
       Alert.alert('Hata', 'Girdiğiniz bilgiler hatalı.');
-      console.log(error);
+      // console.log(error);
     }
   }
 

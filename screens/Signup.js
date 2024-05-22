@@ -20,7 +20,7 @@ export default function SignUp({ navigation }) {
         try {
             const response = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(response.user, { displayName: username });
-            console.log(response);
+            // console.log(response);
             navigation.replace('Home');
         } catch (error) {
             setLoading(false);
@@ -28,7 +28,7 @@ export default function SignUp({ navigation }) {
                 Alert.alert('Hata', 'Bu e-posta adresi zaten kullanımda.');
             } else {
                 Alert.alert('Hata', 'Kayıt işlemi sırasında bir hata oluştu.');
-                console.log(error);
+                // console.log(error);
             }
         }
     }

@@ -103,16 +103,12 @@ function ProfileScreen({ navigation }) {
         aspect: [1, 1],
         quality: 1,
       });
-      console.log('a');
       if (!result.canceled && result.assets.length > 0) {
-        console.log('b');
         // Eğer seçim işlemi iptal edilmediyse ve en az bir fotoğraf seçildiyse
         // İlk fotoğrafın URI'sini alarak Firebase Storage'a yükle
         const firstPhoto = result.assets[0];
         uploadProfileImage(firstPhoto.uri);
-        // console.log(firstPhoto.uri);
       } else {
-        console.log('Fotoğraf seçilmedi veya seçim işlemi iptal edildi.');
         Alert.alert('Hata', 'Profil resmi seçilirken bir hata oluştu.');
       }
     } catch (error) {
@@ -132,7 +128,7 @@ function ProfileScreen({ navigation }) {
       const fileRef = ref(storage, fileName);
       const response = await fetch(uri);
       const blob = await response.blob();
-      console.log('gd');
+      console.log('hata hata hata');
       await uploadBytes(fileRef, blob); //burada sorun
       const downloadURL = await getDownloadURL(fileRef);
       setProfilePhoto(downloadURL);
@@ -140,9 +136,9 @@ function ProfileScreen({ navigation }) {
         photoURL: downloadURL
       });
       setLoading(false); // Ekledim: Yükleme işlemi tamamlandığında loading state'ini false yap
-      console.log('Profil fotoğrafı başarıyla yüklendi. URL:', downloadURL); // Ekledim: Başarıyla yüklendiğinde konsola URL'yi yazdır  
+      // console.log('Profil fotoğrafı başarıyla yüklendi. URL:', downloadURL); // Ekledim: Başarıyla yüklendiğinde konsola URL'yi yazdır  
     } catch (error) {
-      console.error('Profil resmi yüklenirken bir hata oluştu:', error);
+      // console.error('Profil resmi yüklenirken bir hata oluştu:', error);
       Alert.alert('Hata', 'Profil resmi yüklenirken bir hata oluştu.');
     } finally {
       setLoading(false);
@@ -227,6 +223,7 @@ function ProfileScreen({ navigation }) {
 
 function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params;
+  const [activeIndex, setActiveIndex] = useState(0);
   const handleDelete = async () => {
     Alert.alert(
       'Ürünü Sil',
@@ -269,18 +266,46 @@ function ProductDetailScreen({ route, navigation }) {
     }
   };
 
+  const handleScroll = (event) => {
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const viewSize = event.nativeEvent.layoutMeasurement.width;
+    const index = Math.floor(contentOffsetX / viewSize);
+    setActiveIndex(index);
+  };
+
   // Bu kontrol, ürün tamamlandıysa butonları devre dışı bırakır
   const isCompleted = product.isComplete;
   return (
-    <View style={styles.container}>
-      <FlatList
+    <View style={styles.photoContainer}>
+      {/* <FlatList
         horizontal
         data={product.photos}
         keyExtractor={(photo, index) => index.toString()}
         renderItem={({ item }) => (
           <Image source={{ uri: item }} style={styles.productDetailImage} resizeMode="cover" />
         )}
-      />
+      /> */}
+      <ScrollView
+        horizontal
+        pagingEnabled // Ekran boyutunda sayfa geçişi için pagingEnabled ekliyoruz
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        {product.photos.map((photo, index) => (
+          <Image
+            key={index}
+            source={{ uri: photo }}
+            style={{ ...styles.itemDetailImage }}
+            resizeMode="cover"
+          />
+        ))}
+      </ScrollView>
+      <View style={styles.paginationContainer}>
+        {product.photos.map((_, index) => (
+          <View key={index} style={[styles.dot, { opacity: index === activeIndex ? 1 : 0.3 }]} />
+        ))}
+      </View>
       <Text style={styles.productDetailName}>{product.title}</Text>
       <Text style={styles.productDetailLocation}>{product.city}, {product.district}</Text>
       <Text style={styles.productDetailDesc}>{product.description}</Text>
@@ -323,7 +348,7 @@ const styles = StyleSheet.create({
     margin: 5,
   },
   productItem: {
-    width: 170,
+    width: 173,
     borderColor: '#B97AFF',
     borderWidth: 2,
     borderRadius: 15,
@@ -333,7 +358,7 @@ const styles = StyleSheet.create({
     marginBottom: 5
   },
   productImage: {
-    width: '95%',
+    width: '100%',
     height: 120,
     borderRadius: 5,
   },
@@ -346,13 +371,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6700A9',
     marginTop: 5,
-  },
-  productDetailImage: {
-    alignSelf: 'center',
-    width: 370,
-    height: 370,
-    borderRadius: 5,
-    marginVertical: 15,
   },
   productDetailName: {
     marginLeft: 20,
@@ -415,7 +433,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
   },
-
   completedProductItem: {
     opacity: 0.3,
     width: 170,
@@ -428,11 +445,11 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   profileImage: {
-    width: 130,
-    height: 130,
+    width: 120,
+    height: 120,
     borderRadius: 75,
     borderColor: '#B97AFF',
-    borderWidth: 2,
+    borderWidth: 1,
   },
   profileImageContainer: {
     width: 130,
@@ -455,6 +472,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-
+  itemDetailImage: {
+    alignSelf: 'center',
+    width: 370,
+    height: 370,
+    borderRadius: 5,
+    marginBottom: 15,
+    marginHorizontal: 10
+  },
+  photoContainer: {
+    marginVertical: 20,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  dot: {
+    height: 10,
+    width: 10,
+    borderRadius: 5,
+    backgroundColor: '#B97AFF',
+    marginHorizontal: 5,
+  },
 });
 

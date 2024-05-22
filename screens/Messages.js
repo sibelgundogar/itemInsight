@@ -4,6 +4,12 @@ import { View, StyleSheet, Text, Image, TouchableOpacity, TextInput } from 'reac
 import { createStackNavigator } from '@react-navigation/stack';
 import { FontAwesome } from '@expo/vector-icons';
 
+
+// useEffect kullan
+// onsnapshot ile yeni mesaj gelince tetikleme kısmını yaparız
+// 
+
+
 // const Tab = createMaterialTopTabNavigator();
 const Stack = createStackNavigator();
 

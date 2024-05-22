@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity,ScrollView, Dimensions  } from 'react-native';
-import { SearchBar } from 'react-native-elements';
+import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
+import SearchModal from '../components/SearchModal';
 
 import Messages from './Messages';
 import New from './New';
@@ -82,18 +82,25 @@ function HomeScreen({ navigation }) {
   const [items, setItems] = useState([]);
   const [refreshing, setRefreshing] = useState(false); // Yenileme durumunu izlemek için state
   const [searchText, setSearchText] = useState('');
-
+  const [searchCity, setSearchCity] = useState('');
+  const [searchDistrict, setSearchDistrict] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+  
   const db = getFirestore();
+
   // Verilerin yenilenmesini sağlayacak işlev
- const refreshItems = async () => {
-  setRefreshing(true); // Yenileme başladığında refreshing state'ini true olarak ayarla
+const refreshItems = async () => {
+  setRefreshing(true);
   try {
-    const q = query(collection(db, 'items'), orderBy('timestamp', 'desc')); // Verileri timestamp alanına göre azalan sırayla getir
+    const q = query(collection(db, 'items'), orderBy('timestamp', 'desc'));
     const querySnapshot = await getDocs(q);
     const itemsData = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      if (!data.isComplete && data.title.toLowerCase().includes(searchText.toLowerCase())) { // Sadece isComplete değeri false olan ve arama metnini içeren ürünler ekleniyor
+      const titleMatches = data.title.toLowerCase().includes(searchText.toLowerCase());
+      const descriptionMatches = data.description.toLowerCase().includes(searchText.toLowerCase());
+      const cityMatches = searchCity ? data.city.toLowerCase().includes(searchCity.toLowerCase()) : true;
+      if (!data.isComplete && titleMatches || descriptionMatches || cityMatches) {
         itemsData.push({
           id: doc.id,
           title: data.title,
@@ -109,12 +116,14 @@ function HomeScreen({ navigation }) {
   } catch (error) {
     console.error('Verileri alırken bir hata oluştu:', error);
   } finally {
-    setRefreshing(false); // Yenileme tamamlandığında refreshing state'ini false olarak ayarla
+    setRefreshing(false);
   }
 };
+
+
   useEffect(() => {
     refreshItems(); // Sayfa yüklendiğinde verileri ilk kez getir
-  }, [searchText]);
+  }, [searchText, searchCity, searchDistrict]);
 
   // Her bir ürünü render ediyor
   const renderItem = ({ item }) => (
@@ -127,13 +136,45 @@ function HomeScreen({ navigation }) {
     </TouchableOpacity>
   );
 
-  // Ana sayfanın tasarımı search bar ve ürünlerin flat listi return ediliyor
+  const handleSearch = (text, city, district) => {
+    setSearchText(text);
+    setSearchCity(city);
+    setSearchDistrict(district);
+  };
+
+  const handleClearSearch = () => {
+    setSearchText('');
+    setSearchCity('');
+    setSearchDistrict('');
+    refreshItems(); 
+  };
+
+
   return (
     <View style={styles.container}>
-      <SearchBar style={styles.searchbar} placeholder="Bul..." lightTheme onChangeText={(text) => setSearchText(text)} value={searchText} />
-      <FlatList data={items} renderItem={renderItem} keyExtractor={(item) => item.id.toString()} numColumns={2}
-        refreshing={refreshing} // FlatList'in yenileme durumunu göstermesi için refreshing prop'unu ayarla
-        onRefresh={refreshItems} // FlatList yenileme işlevini belirle
+      <View style={styles.searchContainer}>
+        <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.searchButton}>
+          <MaterialCommunityIcons name="magnify" color="#B97AFF" size={25} />
+          <Text style={styles.searchText}>Bul...</Text>
+        </TouchableOpacity>
+        {(searchText || searchCity || searchDistrict) && (
+          <TouchableOpacity onPress={handleClearSearch} style={styles.clearButton}>
+            <MaterialCommunityIcons name="close-circle" color="#B97AFF" size={25} />
+          </TouchableOpacity>
+        )}
+      </View>
+      <FlatList
+        data={items}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        refreshing={refreshing}
+        onRefresh={refreshItems}
+      />
+      <SearchModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSearch={handleSearch}
       />
     </View>
   );
@@ -150,7 +191,7 @@ function ItemDetailScreen({ route }) {
     const viewSize = event.nativeEvent.layoutMeasurement.width;
     const index = Math.floor(contentOffsetX / viewSize);
     setActiveIndex(index);
-};
+  };
 
   // // Tüm resimleri göstermek için renderItem fonksiyonu güncelleniyor
   // const renderItem = ({ item }) => (
@@ -176,7 +217,7 @@ function ItemDetailScreen({ route }) {
           <Image
             key={index}
             source={{ uri: photo }}
-            style={{ ...styles.itemDetailImage}} 
+            style={{ ...styles.itemDetailImage }}
             resizeMode="cover"
           />
         ))}
@@ -208,7 +249,7 @@ function HomeWrapper() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    // flex: 1,
     padding: 10,
     marginTop: 20,
   },
@@ -218,20 +259,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#bdc6cf',
   },
   itemItemContainer: {
-    flex: 1,
+    // flex: 1,
     margin: 5,
   },
   itemItem: {
-    flex: 1,
+    // flex: 1,
     alignItems: 'center',
-    width: 170,
+    width: 173,
     borderColor: '#B97AFF',
     borderWidth: 2,
     borderRadius: 15,
     padding: 10,
   },
   itemImage: {
-    width: '95%',
+    width: '100%',
     height: 120,
     borderRadius: 5
   },
@@ -289,7 +330,7 @@ const styles = StyleSheet.create({
   paginationContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 10, 
+    marginTop: 10,
     marginBottom: 20,
   },
   dot: {
@@ -298,6 +339,29 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#B97AFF',
     marginHorizontal: 5,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    marginHorizontal: 10,
+    marginBottom: 10,
+    marginTop: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#B97AFF',
+  },
+  searchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  searchText: {
+    marginLeft: 10,
+    color: '#888',
+  },
+  clearButton: {
+    marginLeft: 10,
   },
 });
 

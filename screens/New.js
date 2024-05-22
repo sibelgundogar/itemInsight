@@ -34,7 +34,7 @@ export default function New({ navigation }) {
     const { status } = await Camera.requestCameraPermissionsAsync();
 
     if (status !== 'granted') {
-      console.log('Kamera izni reddedildi.');
+      // console.log('Kamera izni reddedildi.');
       return;
     }
 
@@ -127,7 +127,7 @@ export default function New({ navigation }) {
       };
 
       const docRef = await addDoc(collection(db, "items"), productData);
-      console.log("Ürün başarıyla eklendi:", docRef.id);
+      // console.log("Ürün başarıyla eklendi:", docRef.id);
       Alert.alert('Tebrikler', 'Ürün başarıyla eklendi.');
       //sayfayı yeniliyor formun boşaltılması için
       navigation.replace("Home", { screen: "New" })
