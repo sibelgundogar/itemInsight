@@ -1,9 +1,11 @@
-import React from 'react';
-import { View, StyleSheet, Text, Image, TouchableOpacity, TextInput } from 'react-native';
+import { useEffect } from 'react';
+import { View, StyleSheet, Text, Image, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { FontAwesome } from '@expo/vector-icons';
 import { onSnapshot, collection, getFirestore } from 'firebase/firestore';
+import { IncomingMessages } from './IncomingMessages';
+import { OutgoingMessages } from './OutgoingMessages';
 
 
 // useEffect kullan
@@ -18,15 +20,15 @@ const Stack = createStackNavigator();
 //Mesajlar ve mesaj detayı sayfasının stack navigatoru
 export default function Messages() {
   useEffect(() => {
-    console.log("Subsribed")
-    const unsubscribe = onSnapshot(collection(db, "messages"), (snapshot) => {
-      const source = snapshot.metadata.hasPendingWrites ? "Local" : "Server";
-      console.log(source, snapshot.data())
-    })
-    return () => {
-      console.log("Unsubsribed")
-      unsubscribe()
-    }
+    // console.log("Subscribed")
+    // const unsubscribe = onSnapshot(collection(db, "messages"), (snapshot) => {
+    //   const source = snapshot.metadata.hasPendingWrites ? "Local" : "Server";
+    // })
+
+    // return () => {
+    //   console.log("Unsubscribed")
+    //   unsubscribe()
+    // }
   }, [])
 
   return (
@@ -42,111 +44,49 @@ function Tabs() {
   return (
     // Tab.Navigator
     <Tab.Navigator>
-      <Tab.Screen name="Gelen Mesajlar" component={Inbox} />
-      <Tab.Screen name="Gönderilen Mesajlar" component={Sent} />
+      <Tab.Screen name="Gelen Mesajlar" component={IncomingMessages} />
+      <Tab.Screen name="Gönderilen Mesajlar" component={OutgoingMessages} />
     </Tab.Navigator>
   );
 }
 
-// Gelen Mesajlar sayfası 
-function Inbox({ navigation }) {
-  //bir mesaja tıkladığında, o mesajın detayları içeren  mesaj detay sayfasına yönlendirmek için kullanılır parametreleri onPress den geliyor
-  const navigateToDetails = (headerText, msgText, dateText, image) => {
-    navigation.navigate('MesajDetay', { headerText, msgText, dateText, image });
-  };
 
-  return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.msgContainer}
-        onPress={() =>  //tıklanınca navigateToDetails çalışır ve parametreler gönderilir
-          navigateToDetails(
-            'Cüzdan',
-            'Merhaba, cüzdan bana ait...',
-            '22.12.24',
-            require('../images/cuzdan.jpg')
-          )
-        }>
 
-        <Image source={require('../images/cuzdan.jpg')} style={styles.image} />
-        <View style={styles.textContainer}>
-          <Text style={styles.headerText}>Cüzdan</Text>
-          <Text style={styles.msgText}>Merhaba, cüzdan bana ait...</Text>
-        </View>
-        <Text style={styles.dateText}>22.12.24</Text>
-      </TouchableOpacity>
 
-      <TouchableOpacity style={styles.msgContainer}
-        onPress={() =>
-          navigateToDetails(
-            'Kolye',
-            'İyi günler belediyede çalışıyorum kolye bana ait mesajıma dönüş yapar mısınız?',
-            '10.12.24',
-            require('../images/kolye.jpg')
-          )
-        }>
-        <Image source={require('../images/kolye.jpg')} style={styles.image} />
-        <View style={styles.textContainer}>
-          <Text style={styles.headerText}>Kolye</Text>
-          <Text style={styles.msgText}> İyi günler belediyede çalışıyorum kolye bana ait mesajıma dönüş yapar mısınız? </Text>
-        </View>
-        <Text style={styles.dateText}>10.12.24</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-//Gönderilen mesajlar sayfası
-function Sent({ navigation }) {
-  //bir mesaja tıkladığında, o mesajın detayları içeren  mesaj detay sayfasına yönlendirmek için kullanılır parametreleri onPress den geliyor
-  const navigateToDetails = (headerText, msgText, dateText, image) => {
-    navigation.navigate('MesajDetay', { headerText, msgText, dateText, image });
-  };
-
-  return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.msgContainer}
-        onPress={() =>  //tıklanınca navigateToDetails çalışır ve parametreler gönderilir
-          navigateToDetails(
-            'Kulaklık',
-            'Merhaba, kulaklık bana ait, nereden alabilirim? Telefonuma otomatik eşleşecektir.',
-            '11.11.24',
-            require('../images/kulaklik.jpg')
-          )
-        }>
-
-        <Image source={require('../images/kulaklik.jpg')} style={styles.image} />
-        <View style={styles.textContainer}>
-          <Text style={styles.headerText}>Kulaklık</Text>
-          <Text style={styles.msgText}> Merhaba, kulaklık bana ait, nereden alabilirim? Telefonuma otomatik eşleşecektir. </Text>
-        </View>
-        <Text style={styles.dateText}>11.11.24</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
 
 // Mesajlara tıklanınca açılan mesaj detay sayfası
 function MesajDetay({ route }) {
-  const { headerText, msgText, dateText, image } = route.params;
+  const { message } = route.params;
+  const title = message._item.title;
+  const lastMessage = message.messages[0];
+  const photo = message._item.photos[0];
+  const dateTime = lastMessage.time.toDate().toLocaleString();
+
   return (
-    <View style={styles.container}>
-      <View style={styles.msgContainer}>
-        <Image source={image} style={styles.image} />
-        <View style={styles.textContainer}>
-          <Text style={styles.headerText}>{headerText}</Text>
+    <View style={messagesStyles.container}>
+      <View style={messagesStyles.msgContainer}>
+        <Image src={photo} style={messagesStyles.image} />
+        <View style={messagesStyles.textContainer}>
+          <Text style={messagesStyles.headerText}>{title}</Text>
         </View>
       </View>
+      <Text style={messagesStyles.detailDateText}>{dateTime}</Text>
+      <ScrollView style={messagesStyles.detailContainer}>
+        {
+          message.messages.map((msg, index) => {
+            return (
+              <View style={msg.isOwner?messagesStyles.chatRight:messagesStyles.chatLeft}>
+                <Text style={messagesStyles.detailMsgText}>{msg.content}</Text>
+              </View>
+            )
+          })
+        }
+      </ScrollView>
 
-      <View style={styles.detailContainer}>
-        <Text style={styles.detailDateText}>{dateText}</Text>
-        <View style={styles.detailMsgContainer}>
-          <Text style={styles.detailMsgText}>{msgText}</Text>
-        </View>
-      </View>
 
-      <View style={styles.inputContainer}>
-        <TextInput style={styles.input} placeholder="Mesajı giriniz..." />
-        <TouchableOpacity style={styles.sendButton}>
+      <View style={messagesStyles.inputContainer}>
+        <TextInput style={messagesStyles.input} placeholder="Mesajı giriniz..." />
+        <TouchableOpacity style={messagesStyles.sendButton}>
           <FontAwesome name="send" size={24} color="red" />
         </TouchableOpacity>
       </View>
@@ -158,7 +98,7 @@ function MesajDetay({ route }) {
 
 
 
-const styles = StyleSheet.create({
+export const messagesStyles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -202,16 +142,22 @@ const styles = StyleSheet.create({
   detailDateText: {
     alignSelf: 'center',
   },
-  detailMsgContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
+  chatLeft: {
     marginHorizontal: 10,
     borderWidth: 1,
     borderColor: 'gray',
     padding: 7,
     borderTopEndRadius: 12,
     borderBottomRightRadius: 12,
+    borderTopLeftRadius: 12,
+  },
+  chatRight: {
+    marginHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'gray',
+    padding: 7,
+    borderTopEndRadius: 12,
+    borderBottomLeftRadius: 12,
     borderTopLeftRadius: 12,
   },
   detailMsgText: {
