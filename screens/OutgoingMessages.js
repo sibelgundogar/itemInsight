@@ -23,10 +23,19 @@ export function OutgoingMessages({ navigation }) {
         const querySnapshot = await getDocs(q);
         for (const doc of querySnapshot.docs) {
             const data = doc.data();
-            data._item = (await getDoc(data.item)).data();
-            allMessages.push(data);
+            const item = (await getDoc(data.item)).data();
+
+			const message = {
+				_id: doc.id,
+				messages: data.messages,
+				ownerId: data.ownerId,
+				senderId: data.senderId,
+				_item: item
+			}
+
+            allMessages.push(message);
         }
-        setMessages([...allMessages]);
+        setMessages(allMessages);
     }
 
     useEffect(() => {
@@ -39,10 +48,9 @@ export function OutgoingMessages({ navigation }) {
             {
                 messages.map((message, index) => {
                     const title = message._item.title;
-                    const lastMessage = message.messages[0];
+                    const lastMessage = message.messages[message.messages.length - 1];
                     const photo = message._item.photos[0];
                     const dateTime = lastMessage.time.toDate().toLocaleString();
-
                     return (
                         <TouchableOpacity key={index} style={messagesStyles.msgContainer}
                             onPress={() =>  //tıklanınca navigateToDetails çalışır ve parametreler gönderilir
