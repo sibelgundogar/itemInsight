@@ -141,7 +141,6 @@ function ProfileScreen({ navigation }) {
       const fileRef = ref(storage, fileName);
       const response = await fetch(uri);
       const blob = await response.blob();
-      console.log('hata hata hata');
       await uploadBytes(fileRef, blob); //burada sorun
       const downloadURL = await getDownloadURL(fileRef);
       setProfilePhoto(downloadURL);

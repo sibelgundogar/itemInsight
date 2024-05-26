@@ -4,7 +4,7 @@ import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity, ScrollView }
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { getFirestore, collection, getDocs, query, orderBy, getDoc, doc, where } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, orderBy, getDoc, doc, where, addDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 import Messages from './Messages';
@@ -15,7 +15,7 @@ import SearchModal from '../components/SearchModal';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
-const { currentUser } = getAuth();
+const auth = getAuth();
 const db = getFirestore();
 
 export default function Home() {
@@ -123,6 +123,7 @@ function HomeScreen({ navigation }) {
 						district: data.district,
 						photos: data.photos,
 						timestamp: data.timestamp,
+						userid: data.userId,
 					});
 				}
 			});
@@ -226,23 +227,40 @@ function ItemDetailScreen({ route, navigation }) {
 		// Firestore'daki "messages" koleksiyonuna bir referans oluşturur
 		const messagesRef = collection(db, "messages");
 		// Koleksiyonda item ID si detail leri gösterilen itemın id si ve gönderici şuanki aktif kullanıcı olan belgeler için bir sorgu oluşturur
-		const q = query(messagesRef, where("item", "==", doc(db, "items", itemDetail.id)), where("senderId", "==", currentUser.uid))
-		// getDocs fonksiyonu sorguyu kullanarak Firestore'dan verileri alır ve ilk documenti seçer.
-		const document = (await getDocs(q)).docs[0];
-		// document in içindeki verileri alır.
-		const data = document.data();
+		const q = query(messagesRef, where("item", "==", doc(db, "items", itemDetail.id)), where("senderId", "==", auth.currentUser.uid))
+		const docs = await getDocs(q);
 
+		// getDocs fonksiyonu sorguyu kullanarak Firestore'dan verileri alır ve ilk documenti seçer.
+		if (docs.empty) {
+			var data = {
+				item: doc(db, "items", itemDetail.id),
+				ownerId: itemDetail.userid,
+				senderId: auth.currentUser.uid,
+				messages: [],
+			}
+		} else {
+			const document = docs.docs[0];
+			var data = document.data();
+			data.id = document.id
+
+		}
 		// doc daki değerlele message nesnesi oluşturulur
 		const message = {
-			_id: document.id,
+			id: data.id,
 			messages: data.messages,
 			ownerId: data.ownerId,
 			senderId: data.senderId,
-			_item: itemDetail
+			itemData: itemDetail
 		}
 
 		// MessagesParent ekranına yönlendirir ve MesajDetay ekranına message parametrelerini gönderir
-		navigation.navigate("MessagesParent", { screen: "MesajDetay", params: { message } });
+		navigation.navigate("MessagesParent", {
+			screen: "MesajDetay",
+			initial: "Messages",
+			params: {
+				message: message
+			}
+		})
 	}
 
 	return (

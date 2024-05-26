@@ -4,7 +4,6 @@ import { FontAwesome } from '@expo/vector-icons';
 import { deleteDoc, updateDoc } from 'firebase/firestore';
 
 const ItemDetail = ({ item, fromScreen, navigation, onDelete, onComplete }) => {
-  console.log(item);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const handleDelete = async () => {
@@ -67,7 +66,6 @@ const ItemDetail = ({ item, fromScreen, navigation, onDelete, onComplete }) => {
           <View key={index} style={[styles.dot, { opacity: index === activeIndex ? 1 : 0.3 }]} />
         ))}
       </View>
-{ console.log(item)}
       {/* Ürün bilgileri */}
       <Text style={styles.productDetailName}>{item.title}</Text>
       <Text style={styles.productDetailLocation}>{item.city}, {item.district}</Text>
