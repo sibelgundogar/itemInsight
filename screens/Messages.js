@@ -1,17 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Text, Image, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { FontAwesome } from '@expo/vector-icons';
 import { onSnapshot, collection, getFirestore, doc, arrayUnion, updateDoc, Timestamp } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { IncomingMessages } from './IncomingMessages';
 import { OutgoingMessages } from './OutgoingMessages';
-import { getAuth } from 'firebase/auth';
 
-
-// useEffect kullan
-// onsnapshot ile yeni mesaj gelince tetikleme kısmını yaparız
-// 
 
 const db = getFirestore();
 const auth = getAuth();
@@ -39,9 +35,6 @@ function Tabs() {
 		</Tab.Navigator>
 	);
 }
-
-
-
 
 
 // Mesajlara tıklanınca açılan mesaj detay sayfası

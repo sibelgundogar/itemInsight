@@ -21,7 +21,6 @@ export default function SelectionDrawer({ visible, onClose, options }) {
                                     )
                                 })
                             }
-
                         </View>
                     </View>
                 </TouchableWithoutFeedback>
@@ -35,16 +34,6 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-
-    },
-    button: {
-        backgroundColor: 'blue',
-        padding: 10,
-        borderRadius: 5,
-    },
-    buttonText: {
-        color: 'white',
-        fontSize: 20,
     },
     modalContainer: {
         flex: 1,
@@ -66,8 +55,7 @@ const styles = StyleSheet.create({
         fontSize: 20,
         paddingVertical: 10,
         width: '100%',
-
-    },
+    }
 });
 
 

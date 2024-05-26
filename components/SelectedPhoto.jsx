@@ -1,5 +1,4 @@
-import { StyleSheet, View, Image, TouchableOpacity, Text } from "react-native";
-
+import { StyleSheet, View, Image, TouchableOpacity } from "react-native";
 import { FontAwesome } from '@expo/vector-icons'
 
 export default function SelectedPhoto({ onDelete, src }) {
@@ -27,10 +26,6 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center'
 	},
-	photo: {
-		width: '100%',
-		height: '100%'
-	},
 	deleteButton: {
 		position: 'absolute',
 		top: 0,
@@ -44,5 +39,9 @@ const styles = StyleSheet.create({
 		display: 'flex',
 		alignItems: 'center',
 		justifyContent: 'center',
-	}
+	},
+	photo: {
+		width: '100%',
+		height: '100%'
+	},
 });

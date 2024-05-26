@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Modal, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import InlineListPicker from '../components/InlineListPicker';
 import cities from '../data/cities';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default SearchModal = ({ visible, onClose, onSearch }) => {
   const [searchText, setSearchText] = useState('');
@@ -70,7 +69,6 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
     padding: 10,
     marginVertical: 5,
     borderRadius: 5,

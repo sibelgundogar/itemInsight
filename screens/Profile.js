@@ -2,45 +2,48 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { FontAwesome } from '@expo/vector-icons';
-import { getFirestore, collection, getDocs, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
+import { getFirestore, collection, getDocs, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile } from 'firebase/auth';
+import { getAuth, updateProfile } from 'firebase/auth';
 import { firebaseAuth } from '../firebase';
-import ItemDetail from '../components/ItemDetail'
-import ItemForm from '../components/ItemForm' 
+
 const Stack = createStackNavigator();
+const db = getFirestore();
 
 export default function Profile() {
-
   return (
     <Stack.Navigator>
-      <Stack.Screen name="Profil" component={ProfileScreen} options={{ headerShown: true, headerBackVisible: false }} />
-      <Stack.Screen name="Ürün Detayı" component={ProductDetailScreen} />
+      <Stack.Screen name="Profil" component={ProfileScreen} />
+      <Stack.Screen name="Ürün Detayı" component={ItemDetailScreen} />
     </Stack.Navigator>
   );
 }
 
 function ProfileScreen({ navigation }) {
-  const [userProducts, setUserProducts] = useState([]);
-  const [completedProducts, setCompletedProducts] = useState([]);
-  const currentUser = firebaseAuth.currentUser;
+  const [uploadedItems, setUploadedItems] = useState([]);
+  const [completedItems, setCompletedItems] = useState([]);
   const [profilePhoto, setProfilePhoto] = useState(null); // Profil fotoğrafı state'i
   const [loading, setLoading] = useState(false); // Yükleme durumu
   const storage = getStorage();
+  const { currentUser } = getAuth();
 
-
-  const fetchUserProducts = useCallback(async () => {
+  const fetchUploadedItems = useCallback(async () => {
     try {
-      const db = getFirestore();
+      // Firestore'dan veri çekmek için bir sorgu oluşturuyoruz. kullanıcının yüklediği item ları alır
       const q = query(collection(db, 'items'), where('userId', '==', currentUser.uid));
-      const querySnapshot = await getDocs(q);
-      let productsData = [];
-      let completedProductsData = [];
-      querySnapshot.forEach((doc) => {
+      // getDocs fonksiyonu sorguyu kullanarak Firestore'dan verileri asenkron olarak alır ve document değişkenine atar.
+      const document = await getDocs(q);
+      // Yüklenmiş ürünler ve tamamlanmış ürünler için iki ayrı dizi tanımlanır
+      let uploadedItemsData = [];
+      let completedItemsData = [];
+      // forEach ile document içindeki doc için bir döngü başlatır.
+      document.forEach((doc) => {
+        // doc.data() ile  her belgenin (doc) içindeki veriyi alır ve data değişkenine atar.
         const data = doc.data();
+        // Eğer ürün tamamlanmışsa completedItemsData dizisine eklenir
         if (data.isComplete) {
-          completedProductsData.push({
+          completedItemsData.push({
             id: doc.id,
             title: data.title,
             description: data.description,
@@ -48,10 +51,11 @@ function ProfileScreen({ navigation }) {
             district: data.district,
             photos: data.photos,
             isComplete: data.isComplete,
-            timestamp: data.timestamp 
+            timestamp: data.timestamp
           });
+          // Eğer ürün tamamlanmamışsa uploadedItemsData dizisine eklenir
         } else {
-          productsData.push({
+          uploadedItemsData.push({
             id: doc.id,
             title: data.title,
             description: data.description,
@@ -59,35 +63,38 @@ function ProfileScreen({ navigation }) {
             district: data.district,
             photos: data.photos,
             isComplete: data.isComplete,
-            timestamp: data.timestamp 
+            timestamp: data.timestamp
           });
         }
       });
-      productsData = productsData.sort((a, b) => b.timestamp - a.timestamp);
-      completedProductsData = completedProductsData.sort((a, b) => b.timestamp - a.timestamp);
+      // Yüklenmiş ve tamamlanmış ürünleri zamana göre sıralar
+      uploadedItemsData = uploadedItemsData.sort((a, b) => b.timestamp - a.timestamp);
+      completedItemsData = completedItemsData.sort((a, b) => b.timestamp - a.timestamp);
 
-      setUserProducts(productsData);
-      setCompletedProducts(completedProductsData);
+      // Yüklenmiş ürünleri ve tamamlanmış ürünleri state'e kaydeder
+      setUploadedItems(uploadedItemsData);
+      setCompletedItems(completedItemsData);
     } catch (error) {
       console.error('Kullanıcı ürünlerini alırken bir hata oluştu:', error);
     }
-  }, [currentUser.uid]);
+  }, [currentUser.uid]);  // currentUser.uid değişirse, fetchUploadedItems fonksiyonu yeniden oluşturulacak
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      fetchUserProducts();
+      fetchUploadedItems();
     });
     return unsubscribe;
-  }, [navigation, fetchUserProducts]);
+  }, [navigation, fetchUploadedItems]);
 
+
+  // Her bir ürünü render ediyor
   const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.productItemContainer}
-      onPress={() => navigation.navigate('Ürün Detayı', { product: item })}>
-      <View style={item.isComplete ? styles.completedProductItem : styles.productItem}>
-        <Image source={{ uri: item.photos[0] }} style={styles.productImage} resizeMode="cover" />
-        <Text style={styles.productName} >{item.title}</Text>
-        <Text style={styles.productLocation}>{item.city}, {item.district}</Text>
+    // Öğeye tıklandığında o öğenin detay sayfasına yönlendirir ve item verilerini bu ekrana gönderir.
+    <TouchableOpacity style={styles.itemContainer} onPress={() => navigation.navigate('Ürün Detayı', { itemDetail: item })}>
+      <View style={item.isComplete ? styles.completedItem : styles.uploadedItem}>
+        <Image source={{ uri: item.photos[0] }} style={styles.itemImage} resizeMode="cover" />
+        <Text style={styles.itemName} >{item.title}</Text>
+        <Text style={styles.itemLocation}>{item.city}, {item.district}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -129,7 +136,7 @@ function ProfileScreen({ navigation }) {
   const uploadProfileImage = async (uri) => {
     try {
       setLoading(true);
-      const user = firebaseAuth.currentUser;
+      const user = currentUser.uid;
       const fileName = `profile_images/${user.uid}`;
       const fileRef = ref(storage, fileName);
       const response = await fetch(uri);
@@ -169,10 +176,10 @@ function ProfileScreen({ navigation }) {
     }
   }, []);
 
- 
+
   const renderHeader = () => (
     <>
-      <Text style={styles.hiheader}>Profilim</Text>
+      <Text style={styles.profileHeader}>Profilim</Text>
       <View style={styles.profileContainer}>
         <TouchableOpacity onPress={selectProfileImage} disabled={loading}>
           {loading ? (
@@ -187,7 +194,7 @@ function ProfileScreen({ navigation }) {
             </View>
           )}
         </TouchableOpacity>
-        <Text style={styles.hiText}>Merhaba {firebaseAuth.currentUser.displayName}</Text>
+        <Text style={styles.hiText}>Merhaba {currentUser.displayName}</Text>
       </View>
       <TouchableOpacity style={styles.exitContainer} onPress={() => firebaseAuth.signOut()}>
         <Text style={styles.exitText}>Çıkış yap</Text>
@@ -195,19 +202,19 @@ function ProfileScreen({ navigation }) {
           <FontAwesome name="sign-out" size={24} color="red" />
         </TouchableOpacity>
       </TouchableOpacity>
-      <Text style={styles.header}>Yüklenen İlanlar</Text>
+      <Text style={styles.itemHeader}>Yüklenen İlanlar</Text>
     </>
   );
 
   const renderCompleted = () => (
     <>
-      <Text style={styles.header}>Tamamlanan İlanlar</Text>
+      <Text style={styles.itemHeader}>Tamamlanan İlanlar</Text>
       <FlatList
-        data={completedProducts}
+        data={completedItems}
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
-        extraData={completedProducts} 
+        extraData={completedItems}
       />
     </>
   );
@@ -216,7 +223,7 @@ function ProfileScreen({ navigation }) {
     <FlatList
       ListHeaderComponent={renderHeader}
       ListFooterComponent={renderCompleted}
-      data={userProducts}
+      data={uploadedItems}
       renderItem={renderItem}
       keyExtractor={(item) => item.id.toString()}
       numColumns={2}
@@ -224,12 +231,13 @@ function ProfileScreen({ navigation }) {
     />
   );
 }
-    //buralar scrollview
 
 
-function ProductDetailScreen({ route, navigation }) {
-  const { product } = route.params;
+function ItemDetailScreen({ route, navigation }) {
+  const { itemDetail } = route.params;
   const [activeIndex, setActiveIndex] = useState(0);
+  const isCompleted = itemDetail.isComplete;
+
   const handleDelete = async () => {
     Alert.alert(
       'Ürünü Sil',
@@ -243,9 +251,8 @@ function ProductDetailScreen({ route, navigation }) {
           text: 'Evet',
           onPress: async () => {
             try {
-              const db = getFirestore();
-              const productRef = doc(db, 'items', product.id);
-              await deleteDoc(productRef);
+              const docRef = doc(db, 'items', itemDetail.id);
+              await deleteDoc(docRef);
               navigation.goBack();
             } catch (error) {
               console.error('Ürünü silerken bir hata oluştu:', error);
@@ -259,9 +266,8 @@ function ProductDetailScreen({ route, navigation }) {
 
   const handleComplete = async () => {
     try {
-      const db = getFirestore();
-      const productRef = doc(db, 'items', product.id);
-      await updateDoc(productRef, {
+      const docRef = doc(db, 'items', itemDetail.id);
+      await updateDoc(docRef, {
         isComplete: true
       });
       Alert.alert('Tebrikler', 'Ürünü sahibine ulaştırdınız.');
@@ -279,16 +285,15 @@ function ProductDetailScreen({ route, navigation }) {
     setActiveIndex(index);
   };
 
-  // Bu kontrol, ürün tamamlandıysa butonları devre dışı bırakır
-  const isCompleted = product.isComplete;
+
   return (
-    <View style={styles.photoContainer}>
+    <View style={styles.itemDetailContainer}>
       {/* <FlatList
         horizontal
-        data={product.photos}
+        data={item.photos}
         keyExtractor={(photo, index) => index.toString()}
         renderItem={({ item }) => (
-          <Image source={{ uri: item }} style={styles.productDetailImage} resizeMode="cover" />
+          <Image source={{ uri: item }} style={styles.itemDetailImage} resizeMode="cover" />
         )}
       /> */}
       <ScrollView
@@ -298,7 +303,7 @@ function ProductDetailScreen({ route, navigation }) {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        {product.photos.map((photo, index) => (
+        {itemDetail.photos.map((photo, index) => (
           <Image
             key={index}
             source={{ uri: photo }}
@@ -308,13 +313,13 @@ function ProductDetailScreen({ route, navigation }) {
         ))}
       </ScrollView>
       <View style={styles.paginationContainer}>
-        {product.photos.map((_, index) => (
+        {itemDetail.photos.map((_, index) => (
           <View key={index} style={[styles.dot, { opacity: index === activeIndex ? 1 : 0.3 }]} />
         ))}
       </View>
-      <Text style={styles.productDetailName}>{product.title}</Text>
-      <Text style={styles.productDetailLocation}>{product.city}, {product.district}</Text>
-      <Text style={styles.productDetailDesc}>{product.description}</Text>
+      <Text style={styles.itemDetailName}>{itemDetail.title}</Text>
+      <Text style={styles.itemDetailLocation}>{itemDetail.city}, {itemDetail.district}</Text>
+      <Text style={styles.itemDetailDesc}>{itemDetail.description}</Text>
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.iconButton}
@@ -343,17 +348,11 @@ const styles = StyleSheet.create({
     // flex: 1,
     padding: 10,
   },
-  header: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    marginTop: 10
-  },
-  productItemContainer: {
+  itemContainer: {
     flex: 1,
     margin: 5,
   },
-  productItem: {
+  uploadedItem: {
     width: 173,
     borderColor: '#B97AFF',
     borderWidth: 2,
@@ -363,36 +362,59 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 5
   },
-  productImage: {
+  completedItem: {
+    opacity: 0.3,
+    width: 173,
+    borderColor: '#B97AFF',
+    borderWidth: 2,
+    borderRadius: 15,
+    flex: 1,
+    alignItems: 'center',
+    padding: 10,
+    marginBottom: 5,
+  },
+  itemImage: {
     width: '100%',
     height: 120,
     borderRadius: 5,
   },
-  productName: {
+  itemName: {
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 10,
   },
-  productLocation: {
+  itemLocation: {
     fontSize: 14,
     color: '#6700A9',
     marginTop: 5,
+    marginHorizontal: -10
   },
-  productDetailName: {
+  itemDetailContainer: {
+    marginVertical: 20
+  },
+  itemDetailImage: {
+    alignSelf: 'center',
+    width: 370,
+    height: 370,
+    borderRadius: 5,
+    marginBottom: 15,
+    marginHorizontal: 10,
+  },
+  itemDetailName: {
     marginLeft: 20,
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: 'bold',
     marginTop: 10,
   },
-  productDetailLocation: {
+  itemDetailLocation: {
     marginLeft: 20,
-    fontSize: 15,
+    fontSize: 16,
     color: '#6700A9',
     marginTop: 5,
   },
-  productDetailDesc: {
+  itemDetailDesc: {
     marginLeft: 20,
-    fontSize: 15,
+    fontSize: 17,
     marginTop: 5,
   },
   buttonContainer: {
@@ -410,10 +432,48 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
     alignItems: 'center',
   },
+  profileHeader: {
+    fontSize: 25,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  profileContainer: {
+    alignItems: 'center',
+    marginBottom: 25,
+  },
+  profileImageContainer: {
+    width: 130,
+    height: 130,
+    borderRadius: 75,
+    backgroundColor: '#D3D3D3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderColor: '#B97AFF',
+    borderWidth: 2,
+    marginBottom: 8,
+  },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 75,
+    borderColor: '#B97AFF',
+    borderWidth: 1,
+  },
+  profilePlaceholder: {
+    fontSize: 18,
+    color: 'black',
+    textAlign: 'center',
+    margin: 5
+  },
+  hiText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'gray'
+  },
   exitContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: -10,
     marginLeft: 250,
     marginRight: 10,
     marginBottom: 20,
@@ -428,66 +488,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  hiText: {
+  itemHeader: {
     fontSize: 20,
-    marginLeft: 20,
-    fontWeight: 'bold',
-    color: 'gray'
-  },
-  hiheader: {
-    fontSize: 23,
     fontWeight: 'bold',
     marginBottom: 10,
-  },
-  completedProductItem: {
-    opacity: 0.3,
-    width: 170,
-    borderColor: '#B97AFF',
-    borderWidth: 2,
-    borderRadius: 15,
-    flex: 1,
-    alignItems: 'center',
-    padding: 10,
-    marginBottom: 5,
-  },
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 75,
-    borderColor: '#B97AFF',
-    borderWidth: 1,
-  },
-  profileImageContainer: {
-    width: 130,
-    height: 130,
-    borderRadius: 75,
-    backgroundColor: '#D3D3D3',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderColor: '#B97AFF',
-    borderWidth: 2,
-
-  },
-  profilePlaceholder: {
-    fontSize: 18,
-    color: 'black',
-    textAlign: 'center',
-    margin: 5
-  },
-  profileContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  itemDetailImage: {
-    alignSelf: 'center',
-    width: 370,
-    height: 370,
-    borderRadius: 5,
-    marginBottom: 15,
-    marginHorizontal: 10
-  },
-  photoContainer: {
-    marginVertical: 20,
+    marginTop: 10
   },
   paginationContainer: {
     flexDirection: 'row',
@@ -496,8 +501,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   dot: {
-    height: 10,
-    width: 10,
+    height: 9,
+    width: 9,
     borderRadius: 5,
     backgroundColor: '#B97AFF',
     marginHorizontal: 5,

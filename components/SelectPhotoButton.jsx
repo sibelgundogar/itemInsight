@@ -1,4 +1,4 @@
-import { Text, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text, StyleSheet, TouchableOpacity} from "react-native";
 
 export default function SelectPhotoButton({ onPress }) {
 

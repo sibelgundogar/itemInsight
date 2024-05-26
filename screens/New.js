@@ -1,88 +1,99 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Text, TextInput, TouchableOpacity, Image, FlatList, Alert, ActivityIndicator, TouchableWithoutFeedback } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, ScrollView, Text, TextInput, TouchableOpacity, FlatList, Alert, ActivityIndicator, TouchableWithoutFeedback } from 'react-native';
+import { Camera } from 'expo-camera';
+import { launchCameraAsync, launchImageLibraryAsync, MediaTypeOptions, CameraType } from 'expo-image-picker';
+import { getAuth } from 'firebase/auth';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import SelectedPhoto from '../components/SelectedPhoto';
 import SelectPhotoButton from '../components/SelectPhotoButton';
 import SelectionDrawer from '../components/SelectionDrawer';
-import { launchCameraAsync, launchImageLibraryAsync, MediaTypeOptions, CameraType } from 'expo-image-picker';
-import cities from '../data/cities';
 import InlineListPicker from '../components/InlineListPicker';
-import { Camera } from 'expo-camera';
-import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import firestore from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL  } from 'firebase/storage';
-import { useNavigation } from '@react-navigation/native';
-import { getAuth } from 'firebase/auth';
+import cities from '../data/cities';
 
 export default function New({ navigation }) {
-  const [selectedPhotos, setSelectedPhotos] = useState(['addButton']);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [title, setTitle] = useState('');
-  const [desc, setDesc] = useState('');
+  const [selectedPhotos, setSelectedPhotos] = useState(['addButton']); // Seçilen fotoğrafların dizisi varsayılan olarak sadece buton olacak
   const [selectedCityIndex, setSelectedCityIndex] = useState(0);
   const [selectedDistrictIndex, setSelectedDistrictIndex] = useState(0);
-  const [loading, setLoading] = useState(false); 
-  const db = getFirestore();
+  const [title, setTitle] = useState('');
+  const [desc, setDesc] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const db = getFirestore(); // Firestore ve Firebase Storage bağlantılarını oluşturur
   const storage = getStorage();
-  const { currentUser } = getAuth(); // Kullanıcıyı aldık
+  const { currentUser } = getAuth();  // Firebase Authentication üzerinden kullanıcıyı alır
 
+  // Modal'ın görünürlüğünü true yaparak yeni resim eklemeyi başlatan fonksiyon
   const addPicture = () => {
     setModalVisible(true);
   }
 
+  // Kamera ile resim çekmek için fonksiyon
   const takePicture = async () => {
-    if (selectedPhotos.length >= 6) return;
-    const { status } = await Camera.requestCameraPermissionsAsync();
+    if (selectedPhotos.length >= 6) return; // Seçilen fotoğraf sayısı 6 ile sınırlayıp return yapıyoruz
+    const { status } = await Camera.requestCameraPermissionsAsync(); // Kamera izni istenir
 
+    // Eğer yukardan dönen status onaylanmazsa return yapıyoruz
     if (status !== 'granted') {
-      // console.log('Kamera izni reddedildi.');
       return;
     }
 
+    // // Kamerayı başlatıp fotoğraf çekme işlemini başlatır
     const result = await launchCameraAsync({
-      aspect: [1, 1],
-      allowsEditing: true,
-      cameraType: CameraType.back,
-      mediaTypes: MediaTypeOptions.Images,
-      quality: 0.5,
+      aspect: [1, 1], // Fotoğraf en-boy oranı
+      allowsEditing: true, // Düzenlemeye izin ver fotoğrafteki belli bir alanı kırparak almak için
+      cameraType: CameraType.back, // Sadece arka kamera kullanılır
+      mediaTypes: MediaTypeOptions.Images, // Sadece resimler için izin ver
+      quality: 0.5, // Resim kalitesi 0.5 olarak ayarlanır
     })
 
+    // Eğer kullanıcı işlemi iptal ederse fonksiyondan çıkar
     if (result.canceled) return;
 
+    // selectedPhotos dizisinin bir kopyası newPhotos adında yeni bir diziye atanıyor. selectedPhotos'un içeriğini direkt olarak değiştirmemek için kopya bir dizi oluşturuyoruz
     let newPhotos = [...selectedPhotos];
+    // splice ile newPhotos dizisinin 2. elemanından itibaren 0 eleman silinir ve result.assets[0].uri yeni çekilen fotoğrafın URI'si bu konuma eklenir. Yeni fotoğrafın butonun sağına eklenmesini sağlar
     newPhotos.splice(1, 0, result.assets[0].uri);
-    _setSelectedPhotos(newPhotos);
+    setNewPhotos(newPhotos);
   };
 
+  // Galeriden fotoğraf seçmek için kullanılan fonksiyon
   const selectFromGallery = async () => {
-    if (selectedPhotos.length >= 6) return;
-    const result = await launchImageLibraryAsync({
-      aspect: [1, 1],
-      mediaTypes: MediaTypeOptions.Images,
-      quality: 0.5,
-      allowsMultipleSelection: true,
-      selectionLimit: 6 - selectedPhotos.length
+    if (selectedPhotos.length >= 6) return; // Seçilen fotoğraf sayısı 6 ile sınırlayıp return yapıyoruz
+    const result = await launchImageLibraryAsync({ // Galeri açılır ve kullanıcıya fotoğraf seçebilir
+      aspect: [1, 1], // Fotoğraf en-boy oranı
+      mediaTypes: MediaTypeOptions.Images, // Sadece resimler için izin ver
+      quality: 0.5, // Resim kalitesi 0.5 olarak ayarlanır
+      allowsMultipleSelection: true, // Çoklu seçmeye izin verir
+      selectionLimit: 6 - selectedPhotos.length // Çoklu seçimde limiti ayarlar
     })
 
+    // Eğer kullanıcı işlemi iptal ederse fonksiyondan çıkar
     if (result.canceled) return;
 
+    // result nesnesinde bulunan her fotoğrafın URI'sini içeren bir dizi oluşturur
     let photos = result.assets.map((val) => val.uri)
 
-    let newPhotos = [...selectedPhotos];
-    newPhotos.splice(1, 0, ...photos);
-    _setSelectedPhotos(newPhotos);
+    let newPhotos = [...selectedPhotos]; // selectedPhotos dizisinin kopyası olan newPhotos oluşturulur.
+    newPhotos.splice(1, 0, ...photos);  // Galeriden seçilen fotoğraflar mevcut fotoğrafların/butonun sağına eklenmesini sağlar.
+    setNewPhotos(newPhotos);
   }
 
-  const _setSelectedPhotos = (photos) => {
+  // selectedPhotos dizisini günceller ve modal görünürken ve fotoğraf sayısı 6 dan fazla ise modalı gizler.
+  const setNewPhotos = (photos) => {
     setSelectedPhotos(photos);
     if (modalVisible && photos.length >= 6) setModalVisible(false);
   }
 
+
+  // Bu fonksiyon, belirtilen indexteki fotoğrafı seçilmiş fotoğraflar dizisinden kaldırır
   const removePicture = (index) => {
-    let newPhotos = [...selectedPhotos];
-    newPhotos.splice(index, 1);
-    _setSelectedPhotos(newPhotos);
+    let newPhotos = [...selectedPhotos]; // selectedPhotos dizisinin bir kopyası olan newPhotos oluşturulur
+    newPhotos.splice(index, 1); // splice yöntemiyle index konumundaki fotoğraf diziden kaldırılır.
+    setNewPhotos(newPhotos); // selectedPhotos dizisini günceller
   }
 
+  // Seçilen il ve ilçenin dizideki indeksini fonksiyon ile günceller. 
   const handleCityPicker = (value, index) => {
     setSelectedCityIndex(index);
   };
@@ -91,50 +102,51 @@ export default function New({ navigation }) {
     setSelectedDistrictIndex(index);
   }
 
+  // Yükle butonuna basıldığında .alışacak fonksiyon
   const handleUpload = async () => {
-    if (selectedPhotos.length <= 1 || !title || !desc || selectedCityIndex === 0) {
+    if (selectedPhotos.length <= 1 || !title || !desc || selectedCityIndex === 0) { //Boş alan kontrolü
       Alert.alert('Lütfen tüm alanları doldurun.');
       return;
     }
     try {
-      setLoading(true);
+      setLoading(true); // loading i true yapıyoruz
       // Resimleri Firebase Storage'a yükle
       const photoURLs = [];
-      for (const photo of selectedPhotos) {
-        if (photo !== 'addButton') {
-          const fileName = photo.split('/').pop();
-          const fileRef = ref(storage, fileName);
-          const response = await fetch(photo);
-          const blob = await response.blob();
-          // console.log("uploading")
-          await uploadBytes(fileRef, blob);
-          // console.log("uploaded");
-          const downloadURL = await getDownloadURL(fileRef);
-          photoURLs.push(downloadURL);
+      for (const photo of selectedPhotos) { // Seçilen fotoğrafların her biri için bir döngü başlatır
+        if (photo !== 'addButton') { // Fotoğrafın addButton olmadığını kontrol eder
+          const fileName = photo.split('/').pop(); // Fotoğrafın dosya adını belirlemek için fotoğrafın yolunu parçalar ve en sondaki parçayı alır
+          const fileRef = ref(storage, fileName); // Firebase Storage'da fotoğraf için bir referans oluşturur
+          const response = await fetch(photo); // Fotoğrafın URL'sini kullanarak bir HTTP isteği yapar ve fotoğrafı indirir
+          const blob = await response.blob(); // İndirilen fotoğraf verisini bir Blob nesnesine dönüştürür -  binary dosya veya medya verilerini işlemek
+          console.log("uploading");
+          await uploadBytes(fileRef, blob); // Firebase Storage'a Blob'u yükler.
+          console.log("uploaded");
+          const downloadURL = await getDownloadURL(fileRef); //  yüklenen dosyanın indirme URL'sini alır.
+          photoURLs.push(downloadURL); // indirme URL'sini photoURLs dizisine ekler.
         }
       }
 
-
-      const productData = {
-        userId: currentUser.uid, // Kullanıcı kimliğini ekle
+      // itemData nesnesi oluşturulur ve 
+      const itemData = {
+        userId: currentUser.uid,
         title: title,
         description: desc,
         city: cities[selectedCityIndex].il_adi,
         district: cities[selectedCityIndex].ilceler[selectedDistrictIndex].ilce_adi,
         photos: photoURLs,
         timestamp: serverTimestamp()
-
       };
 
-      const docRef = await addDoc(collection(db, "items"), productData);
+      // addDoc fonksiyonu ile firestore da items collectionuna itemData nesnesini ekler
+      const docRef = await addDoc(collection(db, "items"), itemData);
       // console.log("Ürün başarıyla eklendi:", docRef.id);
       Alert.alert('Tebrikler', 'Ürün başarıyla eklendi.');
-      //sayfayı yeniliyor formun boşaltılması için
-      navigation.replace("Home", { screen: "New" })
+      // Sayfayı yeniliyor formun boşaltılması için
+      navigation.replace("Home", { screen: "Yeni" })
     } catch (error) {
       console.error('Ürün yükleme hatası:', error);
       Alert.alert('Hata', 'Ürün yüklenirken bir hatayla karşılaşıldı.');
-    }finally {
+    } finally {
       setLoading(false); // Yükleme tamamlandığında loading state'ini false olarak ayarla
     }
   };
@@ -142,13 +154,17 @@ export default function New({ navigation }) {
   return (
     <TouchableWithoutFeedback disabled={loading} style={styles.container}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
+        {/* loading true ise bir yükleme göstergesi ActivityIndicator render eder ve yükleme spinner'ı gösterir. */}
         {loading && <ActivityIndicator style={styles.activityIndicator} size="large" color="#B97AFF" />}
-        <SelectionDrawer visible={modalVisible} onClose={() => { setModalVisible(false) }} options={[{ text: 'Camera', action: takePicture }, { text: 'Gallery', action: selectFromGallery }]}/>
+        <SelectionDrawer visible={modalVisible} onClose={() => { setModalVisible(false) }} options={[{ text: 'Camera', action: takePicture }, { text: 'Gallery', action: selectFromGallery }]} />
 
         <View style={[styles.photoContainer, { opacity: loading ? 0.4 : 1 }]}>
-          <FlatList horizontal data={selectedPhotos} renderItem={({ item, index }) => (
-            (item === 'addButton') ? (selectedPhotos.length >= 6) ? null : <SelectPhotoButton onPress={addPicture} /> : <SelectedPhoto onDelete={() => { removePicture(index) }} src={item} />
-          )}
+          <FlatList horizontal data={selectedPhotos}
+            renderItem={({ item, index }) => (
+              // Eğer item addButonsa seçilen fotoğraf sayısını kontrol ediyoruz. seçilen fotoğraf max ise null dönecek addButton olmayacak. ama eğer max değil hala foto ekleeyebiliyorsak selectPhotoButton dönüyoruz. 
+              // Eğer item addButton değilse de SelectedPhoto dönüyoruz 
+              (item === 'addButton') ? (selectedPhotos.length >= 6) ? null : <SelectPhotoButton onPress={addPicture} /> : <SelectedPhoto onDelete={() => { removePicture(index) }} src={item} />
+            )}
           />
         </View>
 
@@ -159,7 +175,7 @@ export default function New({ navigation }) {
         <TextInput style={styles.textArea} placeholder="Ürün Açıklaması" multiline value={desc} onChangeText={(text) => setDesc(text)} />
 
         <InlineListPicker label='İl' items={cities} onSelect={handleCityPicker} renderItemLabel={(value, index) => value.il_adi} />
-        <InlineListPicker label='İlçe' items={cities[selectedCityIndex].ilceler} onSelect={handleDistrictPicker} renderItemLabel={(value, index) => { print(value); return value.ilce_adi; }} />
+        <InlineListPicker label='İlçe' items={cities[selectedCityIndex].ilceler} onSelect={handleDistrictPicker} renderItemLabel={(value, index) => value.ilce_adi} />
 
         <TouchableOpacity style={[styles.uploadButton, { opacity: loading ? 0.4 : 1 }]} onPress={handleUpload} disabled={loading}>
           <Text style={styles.uploadButtonText}>Yükle</Text>
@@ -172,7 +188,11 @@ export default function New({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    position: 'relative', 
+    position: 'relative',
+  },
+  contentContainer: {
+    padding: 20,
+    marginHorizontal: 10
   },
   activityIndicator: {
     position: 'absolute',
@@ -182,11 +202,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
-  },
-  contentContainer: {
-    padding: 20,
-    marginHorizontal: 10
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   photoContainer: {
     borderWidth: 2,

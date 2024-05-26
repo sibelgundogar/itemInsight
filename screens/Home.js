@@ -5,17 +5,17 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { getFirestore, collection, getDocs, query, orderBy, getDoc, doc, where } from 'firebase/firestore';
-import SearchModal from '../components/SearchModal';
-import ItemDetail from '../components/ItemDetail'
+import { getAuth } from 'firebase/auth';
 
 import Messages from './Messages';
 import New from './New';
 import Profile from './Profile';
-import { getAuth } from 'firebase/auth';
+import SearchModal from '../components/SearchModal';
+
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
-const auth = getAuth()
+const { currentUser } = getAuth();
 const db = getFirestore();
 
 export default function Home() {
@@ -30,7 +30,7 @@ function Navbar() {
 		<Tab.Navigator
 			initialRouteName="Main" //varsayılan olarak açılacak sayfa
 			screenOptions={{
-				tabBarActiveTintColor: '#B97AFF',
+				tabBarActiveTintColor: '#B97AFF',  //aktif olan sekmenin sembolünün rengi
 			}}>
 			<Tab.Screen
 				name="Main"
@@ -47,7 +47,7 @@ function Navbar() {
 				name="MessagesParent"
 				component={Messages}
 				options={{
-					headerBackVisible: false,
+					// headerBackVisible: false,
 					headerShown: false,
 					tabBarLabel: 'Mesajlar',
 					tabBarIcon: ({ color }) => (
@@ -56,11 +56,11 @@ function Navbar() {
 				}}
 			/>
 			<Tab.Screen
-				name="New"
+				name="Yeni"
 				component={New}
 				options={{
 					tabBarLabel: 'Yeni',
-					tabBarIcon: ({ color, size }) => (
+					tabBarIcon: ({ color }) => (
 						<MaterialCommunityIcons name="plus" color={color} size={30} />
 					),
 				}}
@@ -72,7 +72,7 @@ function Navbar() {
 					headerBackVisible: false,
 					headerShown: false,
 					tabBarLabel: 'Profil',
-					tabBarIcon: ({ color, size }) => (
+					tabBarIcon: ({ color }) => (
 						<MaterialCommunityIcons name="account" color={color} size={30} />
 					),
 				}}
@@ -84,24 +84,37 @@ function Navbar() {
 // Ana sayfanın kodları
 function HomeScreen({ navigation }) {
 	const [items, setItems] = useState([]);
-	const [refreshing, setRefreshing] = useState(false); // Yenileme durumunu izlemek için state
+	const [refreshing, setRefreshing] = useState(false); // Sayfa yenileme durumunu izlemek için state
 	const [searchText, setSearchText] = useState('');
 	const [searchCity, setSearchCity] = useState('');
 	const [searchDistrict, setSearchDistrict] = useState('');
-	const [modalVisible, setModalVisible] = useState(false);
-	// Verilerin yenilenmesini sağlayacak işlev
+	const [modalVisible, setModalVisible] = useState(false); // Arama yaparken açılan modalın visible durumu için state
+
+	//  Firestore'dan veri çekerek listeyi yenilemek için asenkron olarak yenileme yapar.
 	const refreshItems = async () => {
+		// Listeyi yenileme işlemini true yapıyoruz
 		setRefreshing(true);
 		try {
-			const q = query(collection(db, 'items'), orderBy('timestamp', 'desc'));
-			const querySnapshot = await getDocs(q);
+			// Firestore'daki "items" koleksiyonuna bir referans oluşturur
+			const itemsRef = collection(db, "items");
+			// Firestore'dan veri çekmek için bir sorgu oluşturuyoruz. items isimli collection daki verileri timestamp alanına göre sıralar
+			const q = query(itemsRef, orderBy('timestamp', 'desc'));
+			// getDocs fonksiyonu sorguyu kullanarak Firestore'dan verileri asenkron olarak alır ve document değişkenine atar.
+			const document = await getDocs(q);
+			// Burada boş bir dizi oluşturuyoruz.
 			const itemsData = [];
-			querySnapshot.forEach((doc) => {
+			// forEach ile document içindeki doc için bir döngü başlatır.
+			document.forEach((doc) => {
+				// doc.data() ile  her belgenin (doc) içindeki veriyi alır ve data değişkenine atar.
 				const data = doc.data();
+				// Matches lar ile data daki değeri kullanıcı tarafından girilen search alanındaki değerler ile eşleşmesini kontrol eder.
 				const titleMatches = data.title.toLowerCase().includes(searchText.toLowerCase());
 				const descriptionMatches = data.description.toLowerCase().includes(searchText.toLowerCase());
+				// Şehir filtresi uygulanmadığında tüm şehirlerin eşleşmesini sağlar
 				const cityMatches = searchCity ? data.city.toLowerCase().includes(searchCity.toLowerCase()) : true;
+				// Tamamlanmayan ve yukaradaki filtrelerle eşleşen sonuçları seçer
 				if (!data.isComplete && (titleMatches || descriptionMatches || cityMatches)) {
+					// Yukarda oluşturduğumuz boş diziye bu doc daki değerler pushlanır/eklenir.
 					itemsData.push({
 						id: doc.id,
 						title: data.title,
@@ -113,6 +126,7 @@ function HomeScreen({ navigation }) {
 					});
 				}
 			});
+			// setItems ile items statei itemsData dizisi ile güncellenir
 			setItems(itemsData);
 		} catch (error) {
 			console.error('Verileri alırken bir hata oluştu:', error);
@@ -123,26 +137,31 @@ function HomeScreen({ navigation }) {
 
 
 	useEffect(() => {
-		refreshItems(); // Sayfa yüklendiğinde verileri ilk kez getir
+		// Sayfa yüklendiğinde verileri ilk kez getirmesi için fonksiyonu çağırıyoruz
+		refreshItems();
+		// search verileri değiştiğinde useEffect yani refreshItems fonksiyonu çağrılır.
 	}, [searchText, searchCity, searchDistrict]);
 
 	// Her bir ürünü render ediyor
 	const renderItem = ({ item }) => (
-		<TouchableOpacity style={styles.itemItemContainer} onPress={() => navigation.navigate('Ürün Detayı', { items: item })}>
-			<View style={styles.itemItem}>
-				{item.photos && item.photos.length > 0 && <Image source={{ uri: item.photos[0] }} style={styles.itemImage} resizeMode="cover" />}
+		// Öğeye tıklandığında o öğenin detay sayfasına yönlendirir ve item verilerini bu ekrana gönderir.
+		<TouchableOpacity style={styles.itemContainer} onPress={() => navigation.navigate('Ürün Detayı', { itemDetail: item })}>
+			<View style={styles.itemFrame}>
+				<Image source={{ uri: item.photos[0] }} style={styles.itemImage} resizeMode="cover" />
 				<Text style={styles.itemName}>{item.title}</Text>
 				<Text style={styles.itemLocation}>{item.city}, {item.district}</Text>
 			</View>
 		</TouchableOpacity>
 	);
 
+	// Arama parametrelerini ayarlamak için kullanılır
 	const handleSearch = (text, city, district) => {
 		setSearchText(text);
 		setSearchCity(city);
 		setSearchDistrict(district);
 	};
 
+	// Arama parametrelerini temizler. Ve refreshItems fonksiyonu çağrılarak anasayfa güncellenir
 	const handleClearSearch = () => {
 		setSearchText('');
 		setSearchCity('');
@@ -151,8 +170,10 @@ function HomeScreen({ navigation }) {
 	};
 
 
+	// Tüm sayfanın görünümü için return kısmı
 	return (
 		<View style={styles.container}>
+			{/* En üstteki arama kısmı  */}
 			<View style={styles.searchContainer}>
 				<TouchableOpacity onPress={() => setModalVisible(true)} style={styles.searchButton}>
 					<MaterialCommunityIcons name="magnify" color="#B97AFF" size={25} />
@@ -164,92 +185,96 @@ function HomeScreen({ navigation }) {
 					</TouchableOpacity>
 				)}
 			</View>
+			{/* Anasayfada gösterilen ilanların listesi */}
 			<FlatList
-				data={items}
-				renderItem={renderItem}
-				keyExtractor={(item) => item.id.toString()}
-				numColumns={2}
-				refreshing={refreshing}
-				onRefresh={refreshItems}
+				data={items} // Gösterilecek veri kaynağı olarak items dizisini kullanır
+				renderItem={renderItem} // Her bir öğeyi nasıl render edeceğini belirtir
+				keyExtractor={(item) => item.id.toString()} //  Her bir öğeye benzersiz bir anahtar atar
+				numColumns={2} // Listeyi iki sütun halinde gösterir
+				refreshing={refreshing} // Sayfanın yenilenip yenilenmediğini belirtir
+				onRefresh={refreshItems} // Sayfa yenileme işlemi gerçekleştiğinde çağrılacak fonksiyonu belirtir. 
 			/>
+			{/* Arama kısmında açılan modal */}
 			<SearchModal
-				visible={modalVisible}
-				onClose={() => setModalVisible(false)}
-				onSearch={handleSearch}
+				visible={modalVisible} //  Modal'ın görünürlüğü
+				onClose={() => setModalVisible(false)} // Modal kapatıldığında çağrılacak fonksiyon
+				onSearch={handleSearch} // Arama işlemi gerçekleştirildiğinde çağrılacak fonksiyon
 			/>
 		</View>
 	);
 }
 
-// Ürün detayı sayfası açılca geleek ekranın tasarımını içeren fonksiyon
+// Ürün detayı sayfası açılca geleek ekran
 function ItemDetailScreen({ route, navigation }) {
-	const { items } = route.params;
-	const photos = items && items.photos ? items.photos : [];
+	// route.params içinden itemDetail öğesini çıkarır. geçiş sırasında aktarılan ürün detaylarını içerir
+	const { itemDetail } = route.params;
+	// itemDetail ve itemDetail.photos varsa photos değişkenine atar yoksa boş bir dizi atar.
+	const photos = itemDetail && itemDetail.photos ? itemDetail.photos : [];
+	// aktif indexi tutmak için state
 	const [activeIndex, setActiveIndex] = useState(0);
 
+	// Fotoğrafların yana kaydırmalı bir şekilde görünmesi için fonksiyon
 	const handleScroll = (event) => {
-		const contentOffsetX = event.nativeEvent.contentOffset.x;
-		const viewSize = event.nativeEvent.layoutMeasurement.width;
-		const index = Math.floor(contentOffsetX / viewSize);
-		setActiveIndex(index);
+		const contentOffsetX = event.nativeEvent.contentOffset.x;  // Yatay kaydırma ofsetini alır
+		const viewSize = event.nativeEvent.layoutMeasurement.width; // Görüntüleme alanının genişliğini alır
+		const index = Math.floor(contentOffsetX / viewSize); // Kaydırılan içerik genişliğine göre aktif olan fotoğrafın indeksini hesaplar
+		setActiveIndex(index); // Hesaplanan indeksi activeIndex e atar
 	};
 
+	// Mesaj gönderme butonunun fonksiyonu asenkron çalışır
 	const sendMessage = async () => {
+		// Firestore'daki "messages" koleksiyonuna bir referans oluşturur
 		const messagesRef = collection(db, "messages");
-        const q = query(messagesRef, where("item", "==", doc(db, "items", items.id)), where("senderId", "==", auth.currentUser.uid))
+		// Koleksiyonda item ID si detail leri gösterilen itemın id si ve gönderici şuanki aktif kullanıcı olan belgeler için bir sorgu oluşturur
+		const q = query(messagesRef, where("item", "==", doc(db, "items", itemDetail.id)), where("senderId", "==", currentUser.uid))
+		// getDocs fonksiyonu sorguyu kullanarak Firestore'dan verileri alır ve ilk documenti seçer.
 		const document = (await getDocs(q)).docs[0];
+		// document in içindeki verileri alır.
 		const data = document.data();
 
+		// doc daki değerlele message nesnesi oluşturulur
 		const message = {
 			_id: document.id,
 			messages: data.messages,
 			ownerId: data.ownerId,
 			senderId: data.senderId,
-			_item: items
+			_item: itemDetail
 		}
 
-        navigation.navigate("MessagesParent", {screen: "MesajDetay", params: {message} });
+		// MessagesParent ekranına yönlendirir ve MesajDetay ekranına message parametrelerini gönderir
+		navigation.navigate("MessagesParent", { screen: "MesajDetay", params: { message } });
 	}
 
-	// // Tüm resimleri göstermek için renderItem fonksiyonu güncelleniyor
-	// const renderItem = ({ item }) => (
-	//   <Image source={{ uri: item }} style={styles.itemDetailImage} resizeMode="cover" />
-	// );
-
 	return (
-		<View style={styles.photoContainer}>
-			{/* <FlatList
-        horizontal
-        data={photos}
-        keyExtractor={(photo, index) => index.toString()}
-        renderItem={renderItem}
-      /> */}
+		<View style={styles.itemDetailContainer}>
 			<ScrollView
-				horizontal
-				pagingEnabled // Ekran boyutunda sayfa geçişi için pagingEnabled ekliyoruz
-				showsHorizontalScrollIndicator={false}
-				onScroll={handleScroll}
-				scrollEventThrottle={16}
+				horizontal // Yatay kaydırmayı etkinleştirir
+				pagingEnabled // Sayfa bazlı kaydırmayı etkinleştirir ekran boyutunda geçiş yapar
+				showsHorizontalScrollIndicator={false} // Yatay kaydırma çubuğunu gizler
+				onScroll={handleScroll} // Kaydırma için handleScroll fonksiyonu çağrılır
+			// scrollEventThrottle={1} //  Kaydırma olaylarının ne sıklıkta ele alınacağını belirler milisaniye
 			>
-				{photos.map((photo, index) => (
+
+				{photos.map((photo, index) => ( // photos dizisini dolaşarak her bir fotoğraf için Image bileşeni oluşturur.
 					<Image
-						key={index}
-						source={{ uri: photo }}
+						key={index} // Her bir öğe için benzersiz bir anahtar sağlar
+						source={{ uri: photo }} // Görüntü kaynağını belirler
 						style={{ ...styles.itemDetailImage }}
-						resizeMode="cover"
+						resizeMode="cover" //  Görüntünün, alanı dolduracak şekilde kırpılmasını sağlar.
 					/>
 				))}
 			</ScrollView>
 			<View style={styles.paginationContainer}>
-				{photos.map((_, index) => (
-					<View key={index} style={[styles.dot, { opacity: index === activeIndex ? 1 : 0.3 }]} />
+				{photos.map((photos, index) => ( // photos dizisini dolaşarak her bir fotoğraf için bir nokta oluşturur.
+					<View key={index}
+						style={[styles.dot, { opacity: index === activeIndex ? 1 : 0.3 }]} /> // index activeIndex ise opaklığı 0.3 yapar
 				))}
 			</View>
-			<Text style={styles.itemDetailName}>{items.title}</Text>
-			<Text style={styles.itemDetailLocation}>{items.city}, {items.district}</Text>
-			<Text style={styles.itemDetailDesc}>{items.description}</Text>
-			<TouchableOpacity style={styles.sendButton}>
-				<Text style={styles.sendButtonText} onPress={sendMessage}>Mesaj Gönder</Text>
+			<Text style={styles.itemDetailName}>{itemDetail.title}</Text>
+			<Text style={styles.itemDetailLocation}>{itemDetail.city}, {itemDetail.district}</Text>
+			<Text style={styles.itemDetailDesc}>{itemDetail.description}</Text>
+			<TouchableOpacity style={styles.messageSendButton}>
+				<Text style={styles.messageSendButtonText} onPress={sendMessage}>Mesaj Gönder</Text>
 			</TouchableOpacity>
 		</View>
 	);
@@ -259,7 +284,7 @@ function ItemDetailScreen({ route, navigation }) {
 function HomeWrapper() {
 	return (
 		<Stack.Navigator>
-			<Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+			<Stack.Screen name="Ana Sayfa" component={HomeScreen} options={{ headerShown: false }} />
 			<Stack.Screen name="Ürün Detayı" component={ItemDetailScreen} />
 		</Stack.Navigator>
 	)
@@ -267,20 +292,14 @@ function HomeWrapper() {
 
 const styles = StyleSheet.create({
 	container: {
-		// flex: 1,
+		flex: 1,
 		padding: 10,
 		marginTop: 20,
 	},
-	searchbar: {
-		borderRadius: 4,
-		width: '100%',
-		backgroundColor: '#bdc6cf',
-	},
-	itemItemContainer: {
-		// flex: 1,
+	itemContainer: {
 		margin: 5,
 	},
-	itemItem: {
+	itemFrame: {
 		// flex: 1,
 		alignItems: 'center',
 		width: 173,
@@ -303,6 +322,10 @@ const styles = StyleSheet.create({
 		fontSize: 14,
 		color: '#6700A9',
 		marginTop: 5,
+		marginHorizontal: -10
+	},
+	itemDetailContainer: {
+		marginVertical: 20,
 	},
 	itemDetailImage: {
 		alignSelf: 'center',
@@ -314,36 +337,33 @@ const styles = StyleSheet.create({
 	},
 	itemDetailName: {
 		marginLeft: 20,
-		fontSize: 20,
+		fontSize: 25,
 		fontWeight: 'bold',
 		marginTop: 10,
 	},
 	itemDetailLocation: {
 		marginLeft: 20,
-		fontSize: 15,
+		fontSize: 16,
 		color: '#6700A9',
 		marginTop: 5,
 	},
 	itemDetailDesc: {
 		marginLeft: 20,
-		fontSize: 15,
+		fontSize: 17,
 		marginTop: 5,
 	},
-	sendButton: {
+	messageSendButton: {
 		marginTop: 50,
 		backgroundColor: '#B97AFF',
 		padding: 10,
 		borderRadius: 5,
-		marginLeft: 250,
-		marginRight: 10,
+		marginLeft: 230,
+		marginRight: 20,
 	},
-	sendButtonText: {
+	messageSendButtonText: {
 		color: 'white',
 		textAlign: 'center',
 		fontWeight: 'bold',
-	},
-	photoContainer: {
-		marginVertical: 20,
 	},
 	paginationContainer: {
 		flexDirection: 'row',
@@ -352,8 +372,8 @@ const styles = StyleSheet.create({
 		marginBottom: 20,
 	},
 	dot: {
-		height: 10,
-		width: 10,
+		height: 9,
+		width: 9,
 		borderRadius: 5,
 		backgroundColor: '#B97AFF',
 		marginHorizontal: 5,
@@ -368,6 +388,11 @@ const styles = StyleSheet.create({
 		borderRadius: 10,
 		borderWidth: 1,
 		borderColor: '#B97AFF',
+	},
+	searchbar: {
+		borderRadius: 4,
+		width: '100%',
+		backgroundColor: '#bdc6cf',
 	},
 	searchButton: {
 		flexDirection: 'row',
