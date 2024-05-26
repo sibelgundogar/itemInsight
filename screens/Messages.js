@@ -107,20 +107,20 @@ function MesajDetay({ route }) {
 	}, [localMessages])
 
 	return (
-		<View style={messagesStyles.container}>
-			<View style={messagesStyles.msgContainer}>
-				<Image src={photo} style={messagesStyles.image} />
-				<View style={messagesStyles.textContainer}>
-					<Text style={messagesStyles.headerText}>{title}</Text>
+		<View style={styles.container}>
+			<View style={styles.msgContainer}>
+				<Image src={photo} style={styles.image} />
+				<View style={styles.textContainer}>
+					<Text style={styles.headerText}>{title}</Text>
 				</View>
 			</View>
-			<Text style={messagesStyles.detailDateText}>{dateTime}</Text>
-			<ScrollView ref={scrollView} onScroll={onScroll} style={messagesStyles.detailContainer}>
+			<Text style={styles.detailDateText}>{dateTime}</Text>
+			<ScrollView ref={scrollView} onScroll={onScroll} style={styles.detailContainer}>
 				{
 					localMessages.map((msg, index) => {
 						return (
-							<View key={index} style={{ ...messagesStyles.chatMessageBox, ...(msg.isOwner === isOwner ? messagesStyles.chatRightBox : messagesStyles.chatLeftBox) }}>
-								<Text style={{ ...messagesStyles.chatMessage, ...(msg.isOwner === isOwner ? messagesStyles.chatRightMessage : messagesStyles.chatLeftMessage) }}>{msg.content}</Text>
+							<View key={index} style={{ ...styles.chatMessageBox, ...(msg.isOwner === isOwner ? styles.chatRightBox : styles.chatLeftBox) }}>
+								<Text style={{ ...styles.chatMessage, ...(msg.isOwner === isOwner ? styles.chatRightMessage : styles.chatLeftMessage) }}>{msg.content}</Text>
 							</View>
 						)
 					})
@@ -128,9 +128,9 @@ function MesajDetay({ route }) {
 			</ScrollView>
 
 
-			<View style={messagesStyles.inputContainer}>
-				<TextInput onChangeText={setDraftMessage} value={draftMessage} style={messagesStyles.input} placeholder="Mesajı giriniz..." />
-				<TouchableOpacity style={messagesStyles.sendButton} onPress={sendMessage}>
+			<View style={styles.inputContainer}>
+				<TextInput onChangeText={setDraftMessage} value={draftMessage} style={styles.input} placeholder="Mesajı giriniz..." />
+				<TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
 					<FontAwesome name="send" size={24} color="red" />
 				</TouchableOpacity>
 			</View>
@@ -142,7 +142,7 @@ function MesajDetay({ route }) {
 
 
 
-export const messagesStyles = StyleSheet.create({
+const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 	},
@@ -151,7 +151,7 @@ export const messagesStyles = StyleSheet.create({
 		width: '95%',
 		height: 100,
 		borderWidth: 2,
-		borderColor: 'black',
+		borderColor: "#B97AFF",
 		flexDirection: 'row',
 		padding: 10,
 		borderRadius: 10,
@@ -199,12 +199,12 @@ export const messagesStyles = StyleSheet.create({
 	chatLeftBox: {
 		borderBottomRightRadius: 12,
 		marginRight: "auto",
-		backgroundColor: "#666"
+		backgroundColor: "#9932FF"
 	},
 	chatRightBox: {
 		borderBottomLeftRadius: 12,
 		marginLeft: "auto",
-		backgroundColor: "#a2d"
+		backgroundColor: "#B97AFF"
 	},
 	chatMessage: {
 
