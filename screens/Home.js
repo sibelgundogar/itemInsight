@@ -250,17 +250,16 @@ function ItemDetailScreen({ route, navigation }) {
 			messages: data.messages,
 			ownerId: data.ownerId,
 			senderId: data.senderId,
-			itemData: itemDetail
+			itemData: {
+				id: itemDetail.id,
+				photo: itemDetail.photos[0],
+				title: itemDetail.title,
+			}
 		}
 
 		// MessagesParent ekranına yönlendirir ve MesajDetay ekranına message parametrelerini gönderir
-		navigation.navigate("MessagesParent", {
-			screen: "MesajDetay",
-			initial: "Messages",
-			params: {
-				message: message
-			}
-		})
+		navigation.navigate("MessagesParent", {screen: "Messages", params:{screen:"OutgoingMessages"}});
+		navigation.push("MesajDetay", {message:message});
 	}
 
 	return (

@@ -29,10 +29,19 @@ export function OutgoingMessages({ navigation }) {
 
 				const item = (await getDoc(data.item)).data();
 
-				allMessages.push({
-					...data,
-					itemData: item
-				});
+				const message = {
+					id: data.id,
+					messages: data.messages,
+					ownerId: data.ownerId,
+					senderId: data.senderId,
+					itemData: {
+						id: data.item.id,
+						photo: item.photos[0],
+						title: item.title,
+					}
+				}
+
+				allMessages.push(message);
 			}
 
 			setMessages(allMessages);
@@ -47,7 +56,7 @@ export function OutgoingMessages({ navigation }) {
                 messages.map((message, index) => {
                     const title = message.itemData.title;
                     const lastMessage = message.messages[message.messages.length - 1];
-                    const photo = message.itemData.photos[0];
+                    const photo = message.itemData.photo;
                     const dateTime = lastMessage.time.toDate().toLocaleString();
                     return (
                         <TouchableOpacity key={index} style={messagesStyles.msgContainer}

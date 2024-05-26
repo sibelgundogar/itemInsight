@@ -16,25 +16,10 @@ const Stack = createStackNavigator();
 
 //Mesajlar ve mesaj detayı sayfasının stack navigatoru
 export default function Messages() {
-	// TODO: onsnapshotu entegre et
-	// useEffect(() => {
-	// 	const messagesRef = collection(db, "messages");
-	// 	const q = query(messagesRef, or(
-	// 		where("senderId", "==", auth.currentUser.uid),
-	// 		where("ownerId", "==", auth.currentUser.uid)
-	// 	))
-	// 	const unsubscribe = onSnapshot(q, (querySnapshot) => {
-	// 		const changes = querySnapshot.docChanges();
-	// 		setLocalMessages(doc.data().messages);
-	// 		scrollView.current.scrollToEnd({animated: true})
-	// 	})
-
-	// 	return unsubscribe;
-	// }, [])
 	return (
 		<Stack.Navigator>
 			<Stack.Screen name="Messages" component={Tabs} options={{ headerShown: true, title: "Mesajlar" }} />
-			<Stack.Screen name="MesajDetay" component={MesajDetay} options={{ headerShown: true }} />
+			<Stack.Screen name="MesajDetay" component={MesajDetay} options={{ headerShown: true, title: "Chat" }} />
 		</Stack.Navigator>
 	);
 }
@@ -44,8 +29,8 @@ function Tabs() {
 	return (
 		// Tab.Navigator
 		<Tab.Navigator>
-			<Tab.Screen name="Gelen Mesajlar" component={IncomingMessages} />
-			<Tab.Screen name="Gönderilen Mesajlar" component={OutgoingMessages} />
+			<Tab.Screen name="IncomingMessages" component={IncomingMessages} options={{ headerShown: true, title: "Gelen Mesajlar" }} />
+			<Tab.Screen name="OutgoingMessages" component={OutgoingMessages} options={{ headerShown: true, title: "Gönderilen Mesajlar" }} />
 		</Tab.Navigator>
 	);
 }
@@ -66,7 +51,7 @@ function MesajDetay({ route }) {
 	const messagesRef = collection(db, "messages");
 
 	const title = message.itemData.title;
-	const photo = message.itemData.photos[0];
+	const photo = message.itemData.photo;
 	const dateTime = chatRef ? localMessages.at(-1).time.toDate().toLocaleString() : "New Chat";
 	const isOwner = message.ownerId === auth.currentUser.uid
 
