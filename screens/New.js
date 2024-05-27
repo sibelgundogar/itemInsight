@@ -12,7 +12,7 @@ import InlineListPicker from '../components/InlineListPicker';
 import cities from '../data/cities';
 
 export default function New({ navigation }) {
-  const [selectedPhotos, setSelectedPhotos] = useState(['addButton']); // Seçilen fotoğrafların dizisi varsayılan olarak sadece buton olacak
+  const [selectedPhotos, setSelectedPhotos] = useState(['addButton']); // Seçilen fotoğrafların dizisi varsayılan olarak sadece buton olacak 
   const [selectedCityIndex, setSelectedCityIndex] = useState(0);
   const [selectedDistrictIndex, setSelectedDistrictIndex] = useState(0);
   const [title, setTitle] = useState('');

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, Image, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -228,20 +227,19 @@ function ItemDetailScreen({ route, navigation }) {
 		const messagesRef = collection(db, "messages");
 		// Koleksiyonda item ID si detail leri gösterilen itemın id si ve gönderici şuanki aktif kullanıcı olan belgeler için bir sorgu oluşturur
 		const q = query(messagesRef, where("item", "==", doc(db, "items", itemDetail.id)), where("senderId", "==", auth.currentUser.uid))
-		const docs = await getDocs(q);
+		const docs = await getDocs(q);  // getDocs fonksiyonu sorguyu kullanarak Firestore'dan verileri asenkron olarak alır ve docs değişkenine atar.
 
-		// getDocs fonksiyonu sorguyu kullanarak Firestore'dan verileri alır ve ilk documenti seçer.
-		if (docs.empty) {
+		if (docs.empty) { //docs boşsa eğer data nesnesi oluşturulur item referans tipi olduğu için o itemın id sine işaret etcek
 			var data = {
 				item: doc(db, "items", itemDetail.id),
 				ownerId: itemDetail.userid,
 				senderId: auth.currentUser.uid,
-				messages: [],
+				messages: [], //mesajları bir array olarak tutuyoruz
 			}
-		} else {
+		} else { // eğer boş değilse ilk docucemt i döner
 			const document = docs.docs[0];
-			var data = document.data();
-			data.id = document.id
+			var data = document.data(); // data nesnesine bu documentin datalarını atar
+			data.id = document.id // document id yi data id ye atarr
 
 		}
 		// doc daki değerlele message nesnesi oluşturulur
@@ -257,7 +255,7 @@ function ItemDetailScreen({ route, navigation }) {
 			}
 		}
 
-		// MessagesParent ekranına yönlendirir ve MesajDetay ekranına message parametrelerini gönderir
+		// OutgoingMessage ekranına yönlendirir ve MesajDetay ekranına message parametrelerini gönderir
 		navigation.navigate("MessagesParent", {screen: "Messages", params:{screen:"OutgoingMessages"}});
 		navigation.push("MesajDetay", {message:message});
 	}
@@ -365,7 +363,7 @@ const styles = StyleSheet.create({
 		marginTop: 5,
 	},
 	itemDetailDesc: {
-		marginLeft: 20,
+		marginHorizontal: 20,
 		fontSize: 17,
 		marginTop: 5,
 	},

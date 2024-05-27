@@ -8,28 +8,26 @@ const db = getFirestore()
 // Gelen Mesajlar sayfası 
 export function IncomingMessages({ navigation }) {
 	const [messages, setMessages] = useState([]);
-
 	const auth = getAuth();
 
-	//bir mesaja tıkladığında, o mesajın detayları içeren  mesaj detay sayfasına yönlendirmek için kullanılır parametreleri onPress den geliyor
-	const navigateToDetails = (message) => {
-		navigation.navigate('MesajDetay', { message });
-	};
+	//bir mesaja tıkladığında, o mesajın detayları içeren  mesaj detay sayfasına yönlendirmek için kullanılır
+	const navigateToDetails = (message) => { navigation.navigate('MesajDetay', { message }) };
 
 	useEffect(() => {
 		const messagesRef = collection(db, "messages");
-		const q = query(messagesRef, where("ownerId", "==", auth.currentUser.uid));
+		const q = query(messagesRef, where("ownerId", "==", auth.currentUser.uid)); // Şuanki kullanıcının mesajlarını almak için sorgu ürünün sahibi bizsek
 
-		const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+		// onSnapshot: Firestore'daki sorgunun sonuçlarında gerçek zamanlı güncellemeleri dinlemek için kullanılır. Sorgunun sonuçlarında değişiklik olduğunda tetiklenir
+		const unsubscribe = onSnapshot(q, async (querySnapshot) => { // Firestore'dan gerçek zamanlı güncellemeleri dinlemek için onSnapShot kullandık
 			const allMessages = [];
-			const docs = querySnapshot.docs;
-			for (const document of docs) {
-				const data = document.data();
-				data.id = document.id;
+			const docs = querySnapshot.docs; // Sorgu sonuçlarının belgeleri alınır.
+			for (const document of docs) { // Her belge için döngü oluşturulur. 
+				const data = document.data();  // Belgenin verileri alınır.
+				data.id = document.id; // Belgenin ID'si data nesnesine eklenir.
 
-				const item = (await getDoc(data.item)).data();
+				const item = (await getDoc(data.item)).data();  // Mesajın bağlı olduğu öğenin verileri alınır
 
-				const message = {
+				const message = { // Mesaj verileri bir nesneye toplanır.
 					id: data.id,
 					messages: data.messages,
 					ownerId: data.ownerId,
@@ -41,13 +39,13 @@ export function IncomingMessages({ navigation }) {
 					}
 				}
 
-				allMessages.push(message);
+				allMessages.push(message);  // allMessages dizisine bu mesaj eklenir.
 			}
 
-			setMessages(allMessages);
+			setMessages(allMessages);  // Tüm mesajlar setMessages fonksiyonuyla bileşenin state'ine atanır.
 		})
 
-		return unsubscribe;
+		return unsubscribe; // Bileşen unmount olduğunda aboneliği iptal eder.
 	}, [])
 
 	return (

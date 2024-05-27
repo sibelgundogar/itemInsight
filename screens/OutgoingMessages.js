@@ -8,27 +8,25 @@ const db = getFirestore()
 //Gönderilen mesajlar sayfası
 export function OutgoingMessages({ navigation }) {
     const [messages, setMessages] = useState([]);
-
     const auth = getAuth();
+
     //bir mesaja tıkladığında, o mesajın detayları içeren  mesaj detay sayfasına yönlendirmek için kullanılır parametreleri onPress den geliyor
-    const navigateToDetails = (message) => {
-        navigation.navigate('MesajDetay', { message });
-    };
+    const navigateToDetails = (message) => { navigation.navigate('MesajDetay', { message }) };
 
     useEffect(() => {
         const messagesRef = collection(db, "messages");
-        const q = query(messagesRef, where("senderId", "==", auth.currentUser.uid));
+        const q = query(messagesRef, where("senderId", "==", auth.currentUser.uid)); // ürünün sahibi biz değilsek gönderen bizsek
 
-        const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+        const unsubscribe = onSnapshot(q, async (querySnapshot) => { // Firestore'dan gerçek zamanlı güncellemeleri dinlemek için onSnapShot kullandık
             const allMessages = [];
-            const docs = querySnapshot.docs;
-            for (const document of docs) {
-                const data = document.data();
-                data.id = document.id;
+            const docs = querySnapshot.docs; // Sorgu sonuçlarının belgeleri alınır.
+			for (const document of docs) { // Her belge için döngü oluşturulur. 
+				const data = document.data();  // Belgenin verileri alınır.
+				data.id = document.id; // Belgenin ID'si data nesnesine eklenir.
 
-                const item = (await getDoc(data.item)).data();
+				const item = (await getDoc(data.item)).data();  // Mesajın bağlı olduğu öğenin verileri alınır
 
-                const message = {
+				const message = { // Mesaj verileri bir nesneye toplanır.
                     id: data.id,
                     messages: data.messages,
                     ownerId: data.ownerId,
@@ -40,13 +38,13 @@ export function OutgoingMessages({ navigation }) {
                     }
                 }
 
-                allMessages.push(message);
+                allMessages.push(message); // allMessages dizisine bu mesaj eklenir.
             }
 
-            setMessages(allMessages);
+            setMessages(allMessages); // Tüm mesajlar setMessages fonksiyonuyla bileşenin state'ine atanır.
         })
 
-        return unsubscribe;
+        return unsubscribe; // Bileşen unmount olduğunda aboneliği iptal eder.
     }, [])
 
     return (
@@ -88,7 +86,7 @@ const styles = StyleSheet.create({
         width: '95%',
         height: 100,
         borderWidth: 2,
-		borderColor: "#B97AFF",
+        borderColor: "#B97AFF",
         flexDirection: 'row',
         padding: 10,
         borderRadius: 10,

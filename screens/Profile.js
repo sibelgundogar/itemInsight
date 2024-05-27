@@ -5,7 +5,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { getFirestore, collection, getDocs, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getAuth, updateProfile } from 'firebase/auth';
+import { updateProfile } from 'firebase/auth';
 import { firebaseAuth } from '../firebase';
 
 const Stack = createStackNavigator();
@@ -26,10 +26,11 @@ function ProfileScreen({ navigation }) {
   const [profilePhoto, setProfilePhoto] = useState(null); // Profil fotoğrafı state'i
   const [loading, setLoading] = useState(false); // Yükleme durumu
   const storage = getStorage();
-  const { currentUser } = getAuth();
+  const currentUser = firebaseAuth.currentUser;
 
   const fetchUploadedItems = useCallback(async () => {
     try {
+      const db = getFirestore();
       // Firestore'dan veri çekmek için bir sorgu oluşturuyoruz. kullanıcının yüklediği item ları alır
       const q = query(collection(db, 'items'), where('userId', '==', currentUser.uid));
       // getDocs fonksiyonu sorguyu kullanarak Firestore'dan verileri asenkron olarak alır ve document değişkenine atar.
@@ -136,11 +137,12 @@ function ProfileScreen({ navigation }) {
   const uploadProfileImage = async (uri) => {
     try {
       setLoading(true);
-      const user = currentUser.uid;
+      const user = firebaseAuth.currentUser;
       const fileName = `profile_images/${user.uid}`;
       const fileRef = ref(storage, fileName);
       const response = await fetch(uri);
       const blob = await response.blob();
+      console.log('hata hata hata');
       await uploadBytes(fileRef, blob); //burada sorun
       const downloadURL = await getDownloadURL(fileRef);
       setProfilePhoto(downloadURL);
@@ -150,7 +152,7 @@ function ProfileScreen({ navigation }) {
       setLoading(false); // Ekledim: Yükleme işlemi tamamlandığında loading state'ini false yap
       // console.log('Profil fotoğrafı başarıyla yüklendi. URL:', downloadURL); // Ekledim: Başarıyla yüklendiğinde konsola URL'yi yazdır  
     } catch (error) {
-      // console.error('Profil resmi yüklenirken bir hata oluştu:', error);
+      console.error('Profil resmi yüklenirken bir hata oluştu:', error);
       Alert.alert('Hata', 'Profil resmi yüklenirken bir hata oluştu.');
     } finally {
       setLoading(false);
@@ -507,4 +509,3 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
 });
-
